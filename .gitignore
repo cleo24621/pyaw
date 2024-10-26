@@ -1,0 +1,10 @@
+/.idea/
+/data/
+/docs/
+/results/
+ne_110m_coastline.zip
+SuperMAG-RulesOfTheRoad.txt
+20241022-13-51-supermag.csv
+test.py
+data.json
+test.ipynb
