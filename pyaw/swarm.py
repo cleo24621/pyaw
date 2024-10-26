@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@File        : Swarm.py
+@File        : swarm.py
 @Author      : cleo
 @Date        : 2024/9/23 9:55
 @Project     : PyWave
@@ -12,27 +12,102 @@
 @Last Modified Date: 2024/9/23 9:55
 """
 
-import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
-from pandas import Series
 from scipy.signal import butter, filtfilt, welch
 
-import matplotlib.pyplot as plt
 # 设置全局的图表大小
 plt.rcParams['figure.figsize'] = (10, 6)  # 宽度10英寸，高度6英寸
 
-# sample rate and the window size of moving average
-fs_E = 16
-fs_B = 50
-window_size_E = 20 * fs_E
+import os
+from datetime import datetime, timedelta
 
-window_size_B = 20 * fs_B
+import matplotlib.pyplot as plt
+import numpy as np
+
+from viresclient import SwarmRequest
+
+
+def save_SW_EFIx_TCT16(start, end, satellite='A'):
+    """
+    start,end: like "20240812T000000", other formats are ok.
+    """
+    # get data
+    tct_vars = [# Satellite velocity in NEC frame
+        "VsatC", "VsatE", "VsatN", # Geomagnetic field components derived from 1Hz product
+        #  (in satellite-track coordinates)
+        "Bx", "By", "Bz", # Electric field components derived from -VxB with along-track ion drift
+        #  (in satellite-track coordinates)
+        # Eh: derived from horizontal sensor
+        # Ev: derived from vertical sensor
+        "Ehx", "Ehy", "Ehz", "Evx", "Evy", "Evz", # Ion drift corotation signal, removed from ion drift & electric field
+        #  (in satellite-track coordinates)
+        "Vicrx", "Vicry", "Vicrz", # Ion drifts along-track from vertical (..v) and horizontal (..h) TII sensor
+        "Vixv", "Vixh", # Ion drifts cross-track (y from horizontal sensor, z from vertical sensor)
+        #  (in satellite-track coordinates)
+        "Viy", "Viz", # Random error estimates for the above
+        #  (Negative value indicates no estimate available)
+        "Vixv_error", "Vixh_error", "Viy_error", "Viz_error", # Quasi-dipole magnetic latitude and local time
+        #  redundant with VirES auxiliaries, QDLat & MLT
+        "Latitude_QD", "MLT_QD", # Refer to release notes link above for details:
+        "Calibration_flags", "Quality_flags", ]
+    request = SwarmRequest()
+    request.set_collection(f"SW_EXPT_EFI{satellite}_TCT16")
+    request.set_products(measurements=tct_vars)
+    data = request.get_between(start, end)
+    df = data.as_dataframe()
+    # save
+    sdir = rf"V:\aw\swarm\{satellite}\efi16"
+    sfn = f'sw_efi16{satellite}_{start.strftime("%Y%m%dT%H%M%S")}_{end.strftime("%Y%m%dT%H%M%S")}_0.pkl'
+    os.makedirs(sdir, exist_ok=True)  # dir exit doesn't raise error
+    sfp = os.path.join(sdir, sfn)
+    if os.path.isfile(sfp):
+        print(f"{sfn} already exists, skip save.")
+        return None
+    else:
+        df.to_pickle(sfp)
+        print(f"{sfn} saved")
+        return None
+
+
+def save_SW_MAGx_HR_1B(start, end, satellite='A'):
+    # get data
+    request = SwarmRequest()
+    request.set_collection(f"SW_OPER_MAG{satellite}_HR_1B")
+    request.set_products(measurements=["B_NEC"], )
+    data = request.get_between(start_time=start, end_time=end, asynchronous=False)
+    df = data.as_dataframe()
+    # save
+    sdir = rf"V:\aw\swarm\{satellite}\vfm50"
+    sfn = f'sw_vfm50{satellite}_{start}_{end}_0.pkl'
+    os.makedirs(sdir, exist_ok=True)  # dir exit doesn't raise error
+    sfp = os.path.join(sdir, sfn)
+    if os.path.isfile(sfp):
+        print(f"{sfn} already exists, skip save.")
+        return None
+    else:
+        df.to_pickle(sfp)
+        print(f"{sfn} saved")
+        return None
+
+
+def get_time_strs_forB(start: datetime, num_elements: int) -> list:
+    """
+    want to get 1d data of vfm50, because the data is too large, directly use "save_SW_MAGx_HR_1B()" will raise error, so use this to get the data for several hours.
+    :param start: like datetime(2024, 8, 12, 0, 0, 0)
+    :param num_elements: the whole time range (hour). for example, 24 means 24 hours.
+    :return:
+    """
+    return [(start + timedelta(hours=i)).strftime("%Y%m%dT%H%M%S") for i in range(num_elements+1)]
+
+
 class Swarm:
     def __init__(self):
-        pass
+        self.fs_efi16 = 16
+        self.fs_vfm50 = 50
 
-    def get_BE(self,fp):
+    def get_BE(self, fp):
         # BE
         data_B = xr.open_dataset(fp)
         BE = data_B['B_NEC'][:, 1]
@@ -43,7 +118,7 @@ class Swarm:
         BE = BE['2016-03-11 06:46:40':'2016-03-11 06:48:59']
         self.BE = BE
 
-    def get_BN(self,fp):
+    def get_BN(self, fp):
         # BN
         data_B = xr.open_dataset(fp)
         BN = data_B['B_NEC'][:, 0]
@@ -54,7 +129,7 @@ class Swarm:
         BN = BN['2016-03-11 06:46:40':'2016-03-11 06:48:59']
         self.BN = BN
 
-    def get_E_NE(self,fp,if_draw=True):
+    def get_E_NE(self, fp, if_draw=True):
         data_E = xr.open_dataset(fp)
         data_E = data_E.sel(Timestamp=slice('2016-03-11 06:46:40', '2016-03-11 06:48:59'))
         VsatN = data_E['VsatN']
@@ -66,18 +141,20 @@ class Swarm:
         Ey = Ey.to_dataframe()
         Ex = Ex['Ehx']
         Ey = Ey['Ehy']
+
         def set_outliers_nan(series):
             series_scores = (series - series.mean()) / series.std()
             # 设置阈值，通常 Z 分数大于 3 或小于 -3 的点可以认为是异常点，超过的设置为nan
             threshold = 2
             series[np.abs(series_scores) > threshold] = np.nan
             return series
+
         Ex = set_outliers_nan(Ex)
         Ey = set_outliers_nan(Ey)
         if if_draw:
             plt.figure(1)
-            plt.plot(Ex.index,Ex,label='Ex')
-            plt.plot(Ey.index,Ey,label='Ey')
+            plt.plot(Ex.index, Ex, label='Ex')
+            plt.plot(Ey.index, Ey, label='Ey')
             plt.legend()
             plt.xlabel('Time (UTC)')
             plt.ylabel('E (mV/m)')
@@ -101,13 +178,13 @@ class Swarm:
             plt.title('delete outliers')
         return EN, EE
 
-    def B_mov_ave(self,series,window,draw=True,savefig=False):
+    def B_mov_ave(self, series, window, draw=True, savefig=False):
         series_mov_ave = series.rolling(window=window).mean()
         # figure: before and after moving average comparison
         if draw:
             plt.figure()
-            plt.plot(series.index, series,label=series.name)
-            plt.plot(series_mov_ave.index, series_mov_ave,label=series_mov_ave.name)
+            plt.plot(series.index, series, label=series.name)
+            plt.plot(series_mov_ave.index, series_mov_ave, label=series_mov_ave.name)
             plt.legend()
             plt.xlabel('Time (UTC)')
             plt.ylabel('B (nT)')
@@ -118,7 +195,7 @@ class Swarm:
 
     def E_mov_ave(self, series, window, draw=True, savefig=False):
         series = series.interpolate(method='linear').bfill().ffill()
-        series_mov_ave = series.rolling(window=window_size_B).mean()
+        series_mov_ave = series.rolling(window=window).mean()
         # figure: before and after moving average comparison
         if draw:
             plt.figure()
@@ -131,7 +208,7 @@ class Swarm:
             if savefig:
                 plt.savefig(f'before and after moving average comparison')
 
-    def baselined_filter(self,B,B_mov_ave,E,E_mov_ave,if_draw=True):
+    def baselined_filter(self, B, B_mov_ave, E, E_mov_ave, if_draw=True):
         b = B - B_mov_ave
         b = b['2016-03-11 06:47:00':]
         if if_draw:
@@ -141,24 +218,24 @@ class Swarm:
             # plt.legend()
             plt.xlabel('Time (UTC)')
             plt.ylabel('\\Delta B and \\Delta B after Baselined (nT)')
-            plt.title('B-component perturbation before and after baseline comparison')
-            # plt.savefig(f'b_{B_c_s} before and after baseline comparison')
-            # plt.close()
+            plt.title(
+                'B-component perturbation before and after baseline comparison')  # plt.savefig(f'b_{B_c_s} before and after baseline comparison')  # plt.close()
         e = E - E_mov_ave
         e = e['2016-03-11 06:47:00':]
         if if_draw:
             plt.figure(2)
-            plt.plot(e.index,e, label='before')
-            plt.plot(e.index,e - e.mean(), label='after')
+            plt.plot(e.index, e, label='before')
+            plt.plot(e.index, e - e.mean(), label='after')
             plt.xlabel('Time (UTC)')
             plt.ylabel('e (mV/m)')
             plt.title('E-component perturbation before and after baseline comparison')
         if if_draw:
             plt.figure(3)
-            plt.plot(b.index,b-b.mean(), label='b')
-            plt.plot(e.index,e-e.mean(), label='e')
+            plt.plot(b.index, b - b.mean(), label='b')
+            plt.plot(e.index, e - e.mean(), label='e')
             plt.xlabel('Time (UTC)')
             plt.ylabel('b and e')
+
         # filter
         # 1. 设计带通滤波器
         def butter_bandpass(lowcut, highcut, fs, order=5):
@@ -167,17 +244,19 @@ class Swarm:
             high = highcut / nyquist
             b, a = butter(order, [low, high], btype="band")
             return b, a
+
         # 2. 应用带通滤波器
         def bandpass_filter(data, lowcut, highcut, fs, order=5):
             b, a = butter_bandpass(lowcut, highcut, fs, order=order)
             y = filtfilt(b, a, data)
             return y
+
         # 设置滤波参数
         lowcut = 0.2  # 带通滤波器下限频率
         highcut = 4.0  # 带通滤波器上限频率
-        e_filter = bandpass_filter(e, lowcut, highcut, fs=fs_E, order=5)
+        e_filter = bandpass_filter(e, lowcut, highcut, fs=self.fs_efi16, order=5)
         e_filter = pd.Series(e_filter, index=e.index)
-        b_filter = bandpass_filter(b, lowcut, highcut, fs=fs_B, order=5)
+        b_filter = bandpass_filter(b, lowcut, highcut, fs=self.fs_vfm50, order=5)
         b_filter = pd.Series(b_filter, index=b.index)
         if if_draw:
             plt.figure(4)
@@ -228,11 +307,15 @@ class Swarm:
         return frequencies, psd
 
 
-
-
-
 def main():
-    pass
+    st = datetime(2016, 3, 11, 21, 0, 0)
+    et = datetime(2016, 3, 11, 23, 59, 59)
+    # save_SW_EFIx_TCT16(st,et,'A')
+    # save_SW_EFIx_TCT16(st,et,'B')
+    # save_SW_EFIx_TCT16(st,et,'C')
+    time_strs = get_time_strs_forB(st, 24)
+    for i in range(len(time_strs)-1):
+        save_SW_MAGx_HR_1B(time_strs[i], time_strs[i+1],'A')
 
 
 if __name__ == "__main__":

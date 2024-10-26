@@ -4,20 +4,20 @@
 @DATE: 2024/10/20
 @DESCRIPTION: 
 """
-from cProfile import label
 
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import pywt
 from matplotlib import pyplot as plt
 from numpy import ndarray
 from numpy.typing import ArrayLike
-from paras import mu0, me,mp,e,kB
-import plotly.express as px
-from scipy.signal import butter, filtfilt, welch,savgol_filter
-import pywt
+from scipy.signal import welch
+
+from paras import mu0, me, mp, e, kB
 
 
-def get_va(B0: float|ndarray|pd.Series, np: float | ndarray | pd.Series) -> float | ndarray | pd.Series:
+def get_va(B0: float | ndarray | pd.Series, np: float | ndarray | pd.Series) -> float | ndarray | pd.Series:
     """
     get local alfven velocity
     :param B0: (T SI)
@@ -27,7 +27,8 @@ def get_va(B0: float|ndarray|pd.Series, np: float | ndarray | pd.Series) -> floa
     # todo:: may need modify because "n" quality problem.
     return B0 / np.sqrt(mu0 * (mp * np))
 
-def get_ion_gyrofrequency(B: float|ndarray|pd.Series, mi: float, qi=e):
+
+def get_ion_gyrofrequency(B: float | ndarray | pd.Series, mi: float, qi=e):
     """
     $\Omega_i$
     :param B: (T SI) measured magnetic field.
@@ -37,7 +38,8 @@ def get_ion_gyrofrequency(B: float|ndarray|pd.Series, mi: float, qi=e):
     """
     return (qi * B) / mi
 
-def get_ion_gyroradius(Ti,mi,Omega_i):
+
+def get_ion_gyroradius(Ti, mi, Omega_i):
     """
     $\rho_i$
     :param Ti: (K SI)
@@ -47,7 +49,8 @@ def get_ion_gyroradius(Ti,mi,Omega_i):
     """
     return np.sqrt(Ti * mi) / Omega_i
 
-def get_ion_acoustic_gyroradius(Te,mi,Omega_i):
+
+def get_ion_acoustic_gyroradius(Te, mi, Omega_i):
     """
     $\rho_s$
     :param Te:
@@ -57,7 +60,8 @@ def get_ion_acoustic_gyroradius(Te,mi,Omega_i):
     """
     return np.sqrt(Te * mi) / Omega_i
 
-def get_electron_inertial_length(ne,me=me, mu0=mu0, e=e):
+
+def get_electron_inertial_length(ne, me=me, mu0=mu0, e=e):
     """
     $\lambda_e$
     :param me: (kg)
@@ -67,6 +71,7 @@ def get_electron_inertial_length(ne,me=me, mu0=mu0, e=e):
     :return: (km)
     """
     return np.sqrt(me / (mu0 * ne * e ** 2))
+
 
 def get_beta(n: float, T: pd.Series | np.ndarray, B: pd.Series | np.ndarray):
     """
@@ -82,8 +87,39 @@ def get_beta(n: float, T: pd.Series | np.ndarray, B: pd.Series | np.ndarray):
     return (2 * mu0 * kB * n * T) / (B ** 2)
 
 
+def get_complex_impedance(mu0, va, Sigma_P, omega, z):
+    """
+    use "np.abs()" to get the magnitude of complex impedance
+    :param mu0:
+    :param va:
+    :param Sigma_P:
+    :param omega: angular frequency
+    :param z: the distance from the reflection point (usually 100~200 km altitude)
+    :return:
+    """
+    Gamma = (1 / Sigma_P - mu0 * va) / (1 / Sigma_P + mu0 * va)
+    return mu0 * va * ((1 + Gamma * np.exp(-2j * omega * z / va)) / (1 - Gamma * np.exp(-2j * omega * z / va)))
+
+
+def E_B_ratio_kaw(va, f, rho_i, rho_s, lambda_e, v_fit):
+    """
+    refer to: HULL A J, CHASTON C C, DAMIANO P A. Multipoint Cluster Observations of Kinetic Alfvén Waves, Electron Energization, and O + Ion Outflow Response in the Mid‐Altitude Cusp Associated With Solar Wind Pressure and/or IMF B  Z  Variations[J/OL]. Journal of Geophysical Research: Space Physics, 2023, 128(11): e2023JA031982. DOI:10.1029/2023JA031982.
+    :param va:
+    :param f: frequency
+    :param rho_i:
+    :param rho_s:
+    :param lambda_e:
+    :param v_fit: the velocity corresponding to the fitted curve
+    :return:
+    """
+    k_transverse = (2 * np.pi * f) / v_fit
+    return va * np.sqrt(
+        (1 + (k_transverse ** 2) * (lambda_e ** 2)) / (1 + (k_transverse ** 2) * (rho_i ** 2 + rho_s ** 2))) * (
+            1 + (k_transverse ** 2) * (rho_i ** 2))
+
+
 # data process
-def baseline_correct(series_: pd.Series,baseline: pd.Series) -> pd.Series:
+def baseline_correct(series_: pd.Series, baseline: pd.Series) -> pd.Series:
     """
     :param series_: be baseline corrected
     :param baseline: generally be the rolling average of the series_
@@ -93,6 +129,13 @@ def baseline_correct(series_: pd.Series,baseline: pd.Series) -> pd.Series:
 
 
 def move_average(series_, window, draw=True, savefig=False):
+    """
+    :param series_:
+    :param window:
+    :param draw:
+    :param savefig:
+    :return:
+    """
     series_mov_ave = series_.rolling(window=window).mean()
     # figure: before and after moving average comparison
     if draw:
@@ -119,7 +162,8 @@ def move_average(series_, window, draw=True, savefig=False):
 # savgol_filter()
 
 # wavelet
-def wavelet_smooth(series_: pd.Series, method='linear', wavelet='db4', level=6, threshold=0.2, mode='soft') -> pd.Series:
+def wavelet_smooth(series_: pd.Series, method='linear', wavelet='db4', level=6, threshold=0.2,
+                   mode='soft') -> pd.Series:
     # process nan
     print(f'The number of NaN values: {series_.isna().sum()}')
     series_ = series_.interpolate(method=method)
@@ -133,7 +177,8 @@ def wavelet_smooth(series_: pd.Series, method='linear', wavelet='db4', level=6, 
     smoothed_signal = pywt.waverec(coeffs, wavelet)
     return smoothed_signal
 
-def fft_(series_: pd.Series, fs: float, if_plot:bool=False, figsize=(10, 6), title=''):
+
+def fft_(series_: pd.Series, fs: float, if_plot: bool = False, figsize=(10, 6), title=''):
     """
 
     :param series_: [pd.series]. the type of index is pd.datetime.
@@ -142,7 +187,7 @@ def fft_(series_: pd.Series, fs: float, if_plot:bool=False, figsize=(10, 6), tit
     """
     # make sure that the series doesn't have "nan" values
     if series_.isna().any():
-        compare_before_after_interpolate(series_,method_='linear')
+        compare_before_after_interpolate(series_, method_='linear')
         series_ = series_.interpolate(method='linear')
     n = len(series_)
     f_values = np.fft.fftfreq(n, d=1 / fs)  # frequencies
@@ -165,6 +210,7 @@ def fft_(series_: pd.Series, fs: float, if_plot:bool=False, figsize=(10, 6), tit
         plt.show()
     return positive_frequencies, positive_amplitude_spectrum
 
+
 def psd_(series_, fs, nperseg, nperseg_denominator=2, window='hammind'):
     # todo:: may delete this function
     # todo:: understand psd
@@ -177,8 +223,8 @@ def plt_1f_2curve(x, y1, y2, title='', xlabel='', ylabel='', y1lable='', y2lable
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.plot(x,y1,label=y1lable)
-    plt.plot(x,y2,label=y2lable)
+    plt.plot(x, y1, label=y1lable)
+    plt.plot(x, y2, label=y2lable)
     plt.legend()
     plt.show()
 
@@ -199,7 +245,8 @@ def compare_before_after_interpolate(series_: pd.Series, method_='linear', figsi
     axs[2].plot(x, series_, x)
     plt.show()
 
-def plt_psd(frequencies, psd, method, figsize=(10, 6), xlim: tuple[float, float] =None):
+
+def plt_psd(frequencies, psd, method, figsize=(10, 6), xlim: tuple[float, float] = None):
     plt.figure(figsize=figsize)
     plt.plot(frequencies, psd)
     plt.xlim(xlim)
@@ -210,7 +257,8 @@ def plt_psd(frequencies, psd, method, figsize=(10, 6), xlim: tuple[float, float]
     plt.grid(which='both', linestyle='--', linewidth=0.5)
     plt.show()
 
-def plt_subplots(x: ArrayLike,y1: ArrayLike,y2: ArrayLike,y3: ArrayLike,y4: ArrayLike) -> None:
+
+def plt_subplots(x: ArrayLike, y1: ArrayLike, y2: ArrayLike, y3: ArrayLike, y4: ArrayLike) -> None:
     """
     plot a figure including 5 sub figures. the 1st sub figure on a line.
     :param x:
@@ -251,40 +299,26 @@ def plt_subplots(x: ArrayLike,y1: ArrayLike,y2: ArrayLike,y3: ArrayLike,y4: Arra
 
 # plotly
 # interactive
-def px_1f_2curve(x,y1,y2,title=''):
+def px_1f_2curve(x, y1, y2, title=''):
     # todo:: add code for real-time display of adjustment parameters
-    df = pd.DataFrame({'x':x,'y1':y1,'y2':y2})
-    fig = px.line(df,x='x',y=['y1','y2'],title=title)
+    df = pd.DataFrame({'x': x, 'y1': y1, 'y2': y2})
+    fig = px.line(df, x='x', y=['y1', 'y2'], title=title)
     fig.show()
 
-def px_beta(beta,me,mi):
+
+def px_beta(beta, me, mi):
     df = pd.DataFrame({'x': beta.index, 'y': beta.values})
     fig = px.line(df, x='x', y='y', title='Plasma beta')
     # add specific value horizontal line
-    specific_v = me/mi
-    fig.add_shape(
-        type="line",
-        x0=df['x'].min(),
-        y0=specific_v,
-        x1=df['x'].max(),
-        y1=specific_v,
-        line=dict(color="Red", width=2, dash="dash"),  # type of line
-    )
+    specific_v = me / mi
+    fig.add_shape(type="line", x0=df['x'].min(), y0=specific_v, x1=df['x'].max(), y1=specific_v,
+                  line=dict(color="Red", width=2, dash="dash"),  # type of line
+                  )
     # add annotation
-    fig.add_annotation(
-        x=df['x'].max(),
-        y=specific_v,
-        text=f"$m_e/m_i$={specific_v}",
-        showarrow=False,
-        yshift=10
-    )
+    fig.add_annotation(x=df['x'].max(), y=specific_v, text=f"$m_e/m_i$={specific_v}", showarrow=False, yshift=10)
     # title
-    fig.update_layout(
-        xaxis_title="Time (UT)",
-        yaxis_title="$\\Beta$",
-    )
+    fig.update_layout(xaxis_title="Time (UT)", yaxis_title="$\\Beta$", )
     fig.show()
-
 
 # cross product
 # np.cross(v.values, B.values)
