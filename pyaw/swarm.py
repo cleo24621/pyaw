@@ -12,45 +12,45 @@
 @Last Modified Date: 2024/9/23 9:55
 """
 
-import matplotlib.pyplot as plt
-import pandas as pd
-import xarray as xr
-from scipy.signal import butter, filtfilt, welch
-
-# 设置全局的图表大小
-plt.rcParams['figure.figsize'] = (10, 6)  # 宽度10英寸，高度6英寸
-
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+import pandas as pd
+import xarray as xr
+from scipy.signal import butter, filtfilt, welch
 from viresclient import SwarmRequest
+
+from pyaw import utils
 
 
 def save_SW_EFIx_TCT16(start, end, satellite='A'):
     """
-    start,end: like "20240812T000000", other formats are ok.
+    can get 1d data
+    :param start: '20240812T000000' format
+    :param end: same as 'start'
+    :param satellite: 'A', 'B' or 'C'
+    :return:
     """
     # get data
-    tct_vars = [# Satellite velocity in NEC frame
-        "VsatC", "VsatE", "VsatN", # Geomagnetic field components derived from 1Hz product
+    tct_vars = [  # Satellite velocity in NEC frame
+        "VsatC", "VsatE", "VsatN",  # Geomagnetic field components derived from 1Hz product
         #  (in satellite-track coordinates)
-        "Bx", "By", "Bz", # Electric field components derived from -VxB with along-track ion drift
+        "Bx", "By", "Bz",  # Electric field components derived from -VxB with along-track ion drift
         #  (in satellite-track coordinates)
         # Eh: derived from horizontal sensor
         # Ev: derived from vertical sensor
         "Ehx", "Ehy", "Ehz", "Evx", "Evy", "Evz", # Ion drift corotation signal, removed from ion drift & electric field
         #  (in satellite-track coordinates)
-        "Vicrx", "Vicry", "Vicrz", # Ion drifts along-track from vertical (..v) and horizontal (..h) TII sensor
-        "Vixv", "Vixh", # Ion drifts cross-track (y from horizontal sensor, z from vertical sensor)
+        "Vicrx", "Vicry", "Vicrz",  # Ion drifts along-track from vertical (..v) and horizontal (..h) TII sensor
+        "Vixv", "Vixh",  # Ion drifts cross-track (y from horizontal sensor, z from vertical sensor)
         #  (in satellite-track coordinates)
-        "Viy", "Viz", # Random error estimates for the above
+        "Viy", "Viz",  # Random error estimates for the above
         #  (Negative value indicates no estimate available)
-        "Vixv_error", "Vixh_error", "Viy_error", "Viz_error", # Quasi-dipole magnetic latitude and local time
+        "Vixv_error", "Vixh_error", "Viy_error", "Viz_error",  # Quasi-dipole magnetic latitude and local time
         #  redundant with VirES auxiliaries, QDLat & MLT
-        "Latitude_QD", "MLT_QD", # Refer to release notes link above for details:
+        "Latitude_QD", "MLT_QD",  # Refer to release notes link above for details:
         "Calibration_flags", "Quality_flags", ]
     request = SwarmRequest()
     request.set_collection(f"SW_EXPT_EFI{satellite}_TCT16")
@@ -59,7 +59,7 @@ def save_SW_EFIx_TCT16(start, end, satellite='A'):
     df = data.as_dataframe()
     # save
     sdir = rf"V:\aw\swarm\{satellite}\efi16"
-    sfn = f'sw_efi16{satellite}_{start.strftime("%Y%m%dT%H%M%S")}_{end.strftime("%Y%m%dT%H%M%S")}_0.pkl'
+    sfn = f'sw_efi16{satellite}_{start}_{end}_0.pkl'
     os.makedirs(sdir, exist_ok=True)  # dir exit doesn't raise error
     sfp = os.path.join(sdir, sfn)
     if os.path.isfile(sfp):
@@ -72,6 +72,13 @@ def save_SW_EFIx_TCT16(start, end, satellite='A'):
 
 
 def save_SW_MAGx_HR_1B(start, end, satellite='A'):
+    """
+    usually get 1h data, failed to get 1d data. So combined with `get_time_strs_forB()` to get 1d data.
+    :param start: '20240812T000000' format
+    :param end: same as 'start'
+    :param satellite: 'A', 'B' or 'C'
+    :return:
+    """
     # get data
     request = SwarmRequest()
     request.set_collection(f"SW_OPER_MAG{satellite}_HR_1B")
@@ -92,14 +99,53 @@ def save_SW_MAGx_HR_1B(start, end, satellite='A'):
         return None
 
 
-def get_time_strs_forB(start: datetime, num_elements: int) -> list:
+def get_time_strs_forB(start: str, num_elements: int) -> list:
     """
-    want to get 1d data of vfm50, because the data is too large, directly use "save_SW_MAGx_HR_1B()" will raise error, so use this to get the data for several hours.
-    :param start: like datetime(2024, 8, 12, 0, 0, 0)
+    want to get 1d data of vfm50, because the data is too large, directly use "save_SW_MAGx_HR_1B()" to get 1d data will raise error, so use this to get the data for several hours.
+    :param start: '20240812T000000' format
     :param num_elements: the whole time range (hour). for example, 24 means 24 hours.
     :return:
     """
-    return [(start + timedelta(hours=i)).strftime("%Y%m%dT%H%M%S") for i in range(num_elements+1)]
+    start = pd.to_datetime(start, format='%Y%m%dT%H%M%S')
+    return [(start + timedelta(hours=i)).strftime("%Y%m%dT%H%M%S") for i in range(num_elements + 1)]
+
+
+def pre_e(fp, start, end, handle_outliers=True, threshold=40):
+    df = pd.read_pickle(fp)
+    df = df.loc[start:end]
+    theta = np.arccos(df['VsatN'] ** 2 / (np.abs(df['VsatN']) * np.sqrt(
+        df['VsatN'] ** 2 + df['VsatE'] ** 2)))  # todo: all columns may include outliers?
+    # without quality control to Ehx, Ehy; without outliers delete. (they will cancel each other?)
+    df['eh_sc1'] = df['Ehx']
+    df['eh_sc2'] = df['Ehy']
+    if handle_outliers:
+        df['eh_sc1'] = utils.set_outliers_nan(df['eh_sc1'], threshold=threshold)
+        df['eh_sc2'] = utils.set_outliers_nan(df['eh_sc2'], threshold=threshold)
+    df['Ehn'] = df['eh_sc1'] * np.cos(theta) - df['eh_sc2'] * np.sin(theta)
+    df['Ehe'] = df['eh_sc1'] * np.sin(theta) + df['eh_sc2'] * np.cos(theta)
+    df.rename(columns={'Ehn': 'eh_enu2', 'Ehe': 'eh_enu1'}, inplace=True)
+    # df['Ehn_mv'] = utils.move_average(df['Ehn'], window=20 * configs.fs_efi16, draw=False)
+    # df['Ehe_mv'] = utils.move_average(df['Ehe'], window=20 * configs.fs_efi16, draw=False)
+    return df
+
+
+def pre_b(fp, start, end, handle_outliers=True, threshold=1000):
+    df = pd.read_pickle(fp)
+    df = df.loc[start:end]
+    b_enu1 = []
+    b_enu2 = []
+    b_enu3 = []
+    for B_NEC in df['B_NEC']:
+        b_enu1.append(B_NEC[1])
+        b_enu2.append(B_NEC[0])
+        b_enu3.append(-B_NEC[2])
+    df['b_enu1'] = b_enu1
+    df['b_enu2'] = b_enu2
+    df['b_enu3'] = b_enu3
+    if handle_outliers:
+        df['b_enu1'] = utils.set_outliers_nan(df['b_enu1'], threshold=threshold)
+        df['b_enu2'] = utils.set_outliers_nan(df['b_enu2'], threshold=threshold)
+    return df
 
 
 class Swarm:
@@ -308,14 +354,8 @@ class Swarm:
 
 
 def main():
-    st = datetime(2016, 3, 11, 21, 0, 0)
-    et = datetime(2016, 3, 11, 23, 59, 59)
-    # save_SW_EFIx_TCT16(st,et,'A')
-    # save_SW_EFIx_TCT16(st,et,'B')
-    # save_SW_EFIx_TCT16(st,et,'C')
-    time_strs = get_time_strs_forB(st, 24)
-    for i in range(len(time_strs)-1):
-        save_SW_MAGx_HR_1B(time_strs[i], time_strs[i+1],'A')
+    for i in get_time_strs_forB('20240812T000000', 24):
+        print(i, type(i))
 
 
 if __name__ == "__main__":

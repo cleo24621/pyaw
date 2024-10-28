@@ -14,3 +14,5 @@ ssm_vars = ['Epoch', 'B_SC_OBS_ORIG','DELTA_B_GEO','DELTA_B_SC','SC_ALONG_GEO','
 # swarm
 # miles 2018
 # can take a window forward
+fs_efi16 = 16
+fs_vfm50 = 50
