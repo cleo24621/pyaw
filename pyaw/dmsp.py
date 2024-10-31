@@ -175,7 +175,8 @@ class SPDF:
         :return:
         """
         # get b1_s3_sc
-        b1_s3_sc1, b1_s3_sc2, b1_s3_sc3 = self.ssm_sc2s3_sc(ssm_df['b1_ssm_sc1'], ssm_df['b1_ssm_sc2'], ssm_df['b1_ssm_sc3'])
+        b1_s3_sc1, b1_s3_sc2, b1_s3_sc3 = self.ssm_sc2s3_sc(ssm_df['b1_ssm_sc1'], ssm_df['b1_ssm_sc2'],
+                                                            ssm_df['b1_ssm_sc3'])
         ssm_df.drop(['b1_ssm_sc1', 'b1_ssm_sc2', 'b1_ssm_sc3'], axis=1, inplace=True)
         ssm_df['b1_s3_sc1'] = b1_s3_sc1
         ssm_df['b1_s3_sc2'] = b1_s3_sc2
@@ -185,7 +186,9 @@ class SPDF:
             ['sc_along_geo1', 'sc_along_geo2', 'sc_along_geo3', 'sc_across_geo1', 'sc_across_geo2', 'sc_across_geo3'],
             axis=1, inplace=True)
         # get b_s3_sc_orig
-        b_s3_sc_orig1,b_s3_sc_orig2,b_s3_sc_orig3 = self.ssm_sc2s3_sc(ssm_df['b_ssm_sc_orig1'],ssm_df['b_ssm_sc_orig2'], ssm_df['b_ssm_sc_orig3'])
+        b_s3_sc_orig1, b_s3_sc_orig2, b_s3_sc_orig3 = self.ssm_sc2s3_sc(ssm_df['b_ssm_sc_orig1'],
+                                                                        ssm_df['b_ssm_sc_orig2'],
+                                                                        ssm_df['b_ssm_sc_orig3'])
         ssm_df.drop(['b_ssm_sc_orig1', 'b_ssm_sc_orig2', 'b_ssm_sc_orig3'], axis=1, inplace=True)
         ssm_df['b_s3_sc_orig1'] = b_s3_sc_orig1
         ssm_df['b_s3_sc_orig2'] = b_s3_sc_orig2
@@ -226,17 +229,18 @@ class SPDF:
         u = com3
         return e, n, u
 
-    def get_E(self,v: pd.DataFrame,B:pd.DataFrame) -> np.ndarray:
+    def get_E(self, v: pd.DataFrame, B: pd.DataFrame) -> np.ndarray:
         """
         pay attention the v and B are in the same coordinate system, and the coordinate system should be relatively stationary with respect to the satellite. For example, the ssies3 coordinate system, the enu coordinate system.
         :param v: velocity of ion
         :param B: measurement magnetic field
         :return:
         """
-        return np.cross(v.values,B.values)
+        return np.cross(v.values, B.values)
 
     def compare_b1(self):
         pass  # todo:: compare b1 from different method
+
 
 def r_madrigal_1s(fp):
     dataset = xr.open_dataset(fp)
@@ -253,8 +257,8 @@ ssm_df = spdf.r_ssm(fp_ssm)
 ssm_df_pre = spdf.ssm_pre(ssm_df)
 clipped_ssm_df = spdf.clip_ssm_by_ssies3(s3_df_pre, ssm_df_pre)
 s3_ssm_df = spdf.get_s3_ssm(s3_df_pre, clipped_ssm_df)
-spdf.get_E(s3_ssm_df[['v_s3_sc1','v_s3_sc2','v_s3_sc3']],s3_ssm_df[['b_s3_sc_orig1','b_s3_sc_orig2','b_s3_sc_orig3']])
-
+spdf.get_E(s3_ssm_df[['v_s3_sc1', 'v_s3_sc2', 'v_s3_sc3']],
+           s3_ssm_df[['b_s3_sc_orig1', 'b_s3_sc_orig2', 'b_s3_sc_orig3']])
 
 # plt.figure()
 # assert clipped_ssm_d.index.equals(s3_d_pre.index)

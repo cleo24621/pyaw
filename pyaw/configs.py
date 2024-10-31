@@ -14,5 +14,10 @@ ssm_vars = ['Epoch', 'B_SC_OBS_ORIG','DELTA_B_GEO','DELTA_B_SC','SC_ALONG_GEO','
 # swarm
 # miles 2018
 # can take a window forward
-fs_efi16 = 16
-fs_vfm50 = 50
+fs_efi16 = 16.0
+fs_vfm50 = 50.0
+
+# fp_e = r"\\Diskstation1\file_three\aw\swarm\A\efi16\sw_efi16A_20160311T000000_20160311T235959_0.pkl"
+# fp_b = r"\\Diskstation1\file_three\aw\swarm\A\vfm50\sw_vfm50A_20160311T060000_20160311T070000_0.pkl"
+swarm_start = '20160311T064700'
+swarm_end = '20160311T064900'
