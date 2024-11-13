@@ -282,10 +282,10 @@ class CWT:
         plt.figure(figsize=figsize)
         plt.imshow(cross_spectrum_modulus, extent=[self.signal1.index[0], self.signal1.index[-1], freqs[-1], freqs[0]],
                    aspect='auto', cmap='jet')
-        plt.colorbar(label='|Cross-Spectrum|')
+        plt.colorbar(label='Module')
         plt.xlabel('UT Time [s]')
         plt.ylabel('Frequency [Hz]')
-        plt.title('Cross-Spectrum Modulus')
+        plt.title('One dimensional Continuous Wavelet Transform Modulus')
         plt.show()
         return figure
 

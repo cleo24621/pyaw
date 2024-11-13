@@ -93,6 +93,14 @@ def wavelet_smooth(series_: pd.Series, method='linear', wavelet='db4', level=6, 
 class LHBFilter:
     def __init__(self, signal, fs, lowcut: Optional[float] = None, highcut: Optional[float] = None,
                  order: Optional[int] = 5):
+        """
+
+        :param signal: array_like
+        :param fs:
+        :param lowcut:
+        :param highcut:
+        :param order:
+        """
         assert lowcut is not None or highcut is not None, "lowcut and highcut cannot be both None"
         self.signal = signal
         self.fs = fs

@@ -419,8 +419,10 @@ def main(compo='12'):
     # plot filter
     signal1 = e
     signal2 = b
-    start = pd.to_datetime('20160311T064735')
-    end = pd.to_datetime('20160311T064755')
+    start = pd.to_datetime('20160311T064700')
+    # start = pd.to_datetime('20160311T064735')
+    end = pd.to_datetime('20160311T064900')
+    # end = pd.to_datetime('20160311T064755')
     signal1 = signal1.loc[start:end]
     signal2 = signal2.loc[start:end]  # aligned
     figure_filter(signal1, signal2)
@@ -434,6 +436,8 @@ def main(compo='12'):
     figure_ratio(signal1, signal2, 16)
     # plot
     figure_phase(signal1, signal2)
+    cwt = utils_spectral.CWT(signal1, signal2,sampling_period=1/16)
+    cwt.plot_module()
 
 
 if __name__ == "__main__":
