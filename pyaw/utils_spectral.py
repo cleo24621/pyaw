@@ -86,6 +86,18 @@ class STFT:
         frequencies, times, Sxx = stft(self.signal.values, fs=self.fs)
         return frequencies, times, Sxx
 
+    def plot_stft(self, figsize=(10, 4), shading='gouraud'):
+        freqs, times, Sxx = self.get_stft()
+        Sxx = abs(Sxx)
+        plt.figure(figsize=figsize)
+        plt.pcolormesh(times, freqs, Sxx, shading=shading)
+        plt.colorbar(label='csd module')
+        plt.xlabel('UT Time (s)')
+        plt.ylabel('Frequency (Hz)')
+        plt.title('Cross-Spectrogram module between Signal 1 and Signal 2')
+        plt.show()
+        return figure
+
 
 class CrossCorrelation:
     def __init__(self, signal1, signal2, mode='full'):
@@ -306,11 +318,15 @@ class CWT:
         :param num_bins: Number of bin edges for phase histogram
         :return:
         """
-        _, cross_phase, freqs = self.get_cross_spectral()
+        cross_spectrum_modulus, cross_phase, freqs = self.get_cross_spectral()
         hist_counts = np.zeros((len(freqs), num_bins - 1))  # num_bins-1 bins
         phase_bins = np.linspace(-180, 180, num_bins)
         # Loop over each frequency and calculate histogram for phases
         for i, freq in enumerate(freqs):
+            # # 仅考虑模值大于阈值的相位
+            # valid_phases = cross_phase[i][cross_spectrum_modulus[i] > 100]
+            # if len(valid_phases) > 0:
+            #     hist_counts[i], _ = np.histogram(valid_phases, bins=phase_bins)
             hist_counts[i], _ = np.histogram(cross_phase[i], bins=phase_bins)
         # Normalize counts for better visualization
         hist_counts = hist_counts / np.max(hist_counts, axis=1, keepdims=True)

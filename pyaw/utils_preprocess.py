@@ -60,7 +60,9 @@ def move_average(series_: pd.Series, window: int, min_periods: int = 1, draw: bo
     :param savefig:
     :return:
     """
-    series_mov_ave = series_.rolling(window=window, min_periods=min_periods).mean()
+    # series_mov_ave = series_.rolling(window=window).mean()
+    # series_mov_ave = series_.rolling(window=window, min_periods=min_periods,center=True).mean()
+    series_mov_ave = series_.rolling(window=window,center=True).mean()  # 'center=True' 得到的结果等于‘结果.mean()=0’
     # figure: before and after moving average comparison
     if draw:
         plt.figure()

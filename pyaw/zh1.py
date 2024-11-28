@@ -166,13 +166,15 @@ class EFDSCMClip:
         self.efd_datetime_clip = self.efd.datetime.values[
             (self.efd.datetime.values >= st) & (self.efd.datetime.values <= et)]
         # clipped datetime verification (whether the time interval meets the expectations)
-        b_theory_interval = pd.Timedelta(self.scm.row_len / self.scm.fs, unit='s')
-        e_theory_interval = pd.Timedelta(self.efd.row_len / self.efd.fs, unit='s')
+        b_theory_interval = pd.Timedelta((self.scm.row_len + 1) / self.scm.fs, unit='s')
+        e_theory_interval = pd.Timedelta((self.efd.row_len + 1) / self.efd.fs, unit='s')
         diff_threshold = pd.Timedelta(threshold, unit='ms')
+        # todo: mode group
+        # todo: if not satisfy the assert, fill with nan?
         assert all(np.diff(
-            self.scm_datetime_clip) - b_theory_interval < diff_threshold), "the datetime duration of clipped b minus the theory datetime duration should be less than the set threshold."
+            self.scm_datetime_clip) - b_theory_interval < 10*pd.Timedelta(1/self.scm.fs, unit='s')), "the datetime duration of clipped b minus the theory datetime duration should be less than the set threshold."
         assert all(np.diff(
-            self.efd_datetime_clip) - e_theory_interval < diff_threshold), "the datetime duration of clipped e minus the theory datetime duration should be less than the set threshold."
+            self.efd_datetime_clip) - e_theory_interval < pd.Timedelta(1/self.efd.fs, unit='s')), "the datetime duration of clipped e minus the theory datetime duration should be less than the set threshold."
         self.efd_geo = pd.DataFrame(index=self.efd.datetime.values,
                                     data={'lat': self.efd.dfs['GEO_LAT'].squeeze().values,
                                           'lon': self.efd.dfs['GEO_LON'].squeeze().values,
@@ -207,11 +209,11 @@ class EFDSCMClip:
         self.resample_factor = int(self.scm.fs / self.target_fs)
         interval = 1 / self.target_fs
         self.datetime = pd.date_range(start=self.scm_datetime_clip[0],
-                                      periods=self.b_enu1.shape[0] * self.b_enu1.shape[1] / self.resample_factor,
+                                      periods=int(self.b_enu1.shape[0] * self.b_enu1.shape[1] / self.resample_factor),
                                       freq=f'{interval}s')  # the common time grid
         self.b_resampled_ls = self.b_resampled()
         self.e_datetime = pd.date_range(start=self.efd_datetime_clip[0],
-                                        periods=self.e_enu1.shape[0] * self.e_enu1.shape[1],
+                                        periods=int(self.e_enu1.shape[0] * self.e_enu1.shape[1]),
                                         freq=f'{1 / self.efd.fs}s')  # b_datetime is similar, but I don't need, I just need the resampled b_datetime that is 'self.datetime'
         self.e_resampled_ls = self.e_resampled()
         self.data = self.get_data()

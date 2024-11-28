@@ -122,7 +122,7 @@ class Swarm:
         self.end = end
         self.fp = fp
         self.df = pd.read_pickle(self.fp)
-        self.df = self.df.loc[pd.to_datetime(self.start):pd.to_datetime(self.end)]
+        self.df = self.df.loc[pd.to_datetime(self.start) - pd.Timedelta(20,'s'):pd.to_datetime(self.end) + pd.Timedelta(20,'s')]  # 解决滑动平均数据点个数小于窗口所需数据点个数的情况
         self.df = self.df.rename_axis('datetime')
         self.payload = payload
         self.handle_outliers = handle_outliers
@@ -157,6 +157,7 @@ class Swarm:
         :param threshold:
         :return:
         """
+        # 坐标变换需要用到的角度
         theta = np.arccos(
             self.df['VsatN'] ** 2 / (np.abs(self.df['VsatN']) * np.sqrt(self.df['VsatN'] ** 2 + self.df['VsatE'] ** 2)))
         # todo: without quality control to Ehx, Ehy; without outliers delete. (they will cancel each other?)
@@ -190,6 +191,7 @@ class Swarm:
             # drop
             self.df.drop(columns=['eh_sc1_interpolated', 'eh_sc2_interpolated'], inplace=True)
             print("complete fill nan")
+        # 坐标变换
         self.df['eh_enu1'] = self.df['eh_sc1'] * np.sin(theta) + self.df['eh_sc2'] * np.cos(theta)
         self.df['eh_enu2'] = self.df['eh_sc1'] * np.cos(theta) - self.df['eh_sc2'] * np.sin(theta)
         if if_mv:
