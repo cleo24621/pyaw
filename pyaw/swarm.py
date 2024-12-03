@@ -118,11 +118,12 @@ class Swarm:
         assert payload in ['efi16', 'vfm50'], "payload should be 'efi16' or 'vfm50'"
         self.fs_efi16 = 16
         self.fs_vfm50 = 50
-        self.start = start
-        self.end = end
         self.fp = fp
         self.df = pd.read_pickle(self.fp)
-        self.df = self.df.loc[pd.to_datetime(self.start) - pd.Timedelta(20,'s'):pd.to_datetime(self.end) + pd.Timedelta(20,'s')]  # 解决滑动平均数据点个数小于窗口所需数据点个数的情况
+        if start and end:
+            self.start = start
+            self.end = end
+            self.df = self.df.loc[pd.to_datetime(self.start) - pd.Timedelta(20,'s'):pd.to_datetime(self.end) + pd.Timedelta(20,'s')]  # 解决滑动平均数据点个数小于窗口所需数据点个数的情况
         self.df = self.df.rename_axis('datetime')
         self.payload = payload
         self.handle_outliers = handle_outliers
