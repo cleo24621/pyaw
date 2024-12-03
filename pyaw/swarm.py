@@ -112,7 +112,7 @@ def get_time_strs_forB(start: str, num_elements: int) -> list:
 
 
 class Swarm:
-    def __init__(self, fp: str, payload: str, start: str = configs.swarm_start, end: str = configs.swarm_end,
+    def __init__(self, fp: str, payload: str, start: str, end: str,
                  handle_outliers: Optional[bool] = True, std_times: Optional[float] = None,
                  if_mv: Optional[bool] = None, window_sec: Optional[float] = None, threshold: Optional[float] = None):
         assert payload in ['efi16', 'vfm50'], "payload should be 'efi16' or 'vfm50'"
@@ -123,6 +123,7 @@ class Swarm:
         if start and end:
             self.start = start
             self.end = end
+            # make sure the file include the extended time range
             self.df = self.df.loc[pd.to_datetime(self.start) - pd.Timedelta(20,'s'):pd.to_datetime(self.end) + pd.Timedelta(20,'s')]  # 解决滑动平均数据点个数小于窗口所需数据点个数的情况
         self.df = self.df.rename_axis('datetime')
         self.payload = payload
