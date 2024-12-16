@@ -82,7 +82,7 @@ def save_SW_MAGx_HR_1B(start, end, satellite='A'):
     # get data
     request = SwarmRequest()
     request.set_collection(f"SW_OPER_MAG{satellite}_HR_1B")
-    request.set_products(measurements=["B_NEC"], )
+    request.set_products(measurements=["B_NEC","B_VFM","B_error","q_NEC_CRF","Att_error","Flags_B","Flags_q","Flags_Platform"], )
     data = request.get_between(start_time=start, end_time=end, asynchronous=False)
     df = data.as_dataframe()
     # save

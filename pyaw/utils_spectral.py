@@ -61,14 +61,16 @@ class Spectrogram:
         self.signal = signal
         self.fs = fs
 
-    def get_spectrogram(self):
-        frequencies, times, Sxx = spectrogram(self.signal.values, fs=self.fs)
+    def get_spectrogram(self,window='hann',window_length=4):
+        nperseg = int(window_length * self.fs)  # 每个窗的采样点数
+        noverlap = nperseg // 2  # 50%重叠
+        frequencies, times, Sxx = spectrogram(self.signal.values, fs=self.fs,window=window, nperseg=nperseg, noverlap=noverlap,)
         return frequencies, times, Sxx
 
     def plot_spectrogram(self, figsize=(10, 4), shading='gouraud'):
         freqs, times, Sxx = self.get_spectrogram()
         plt.figure(figsize=figsize)
-        plt.pcolormesh(times, freqs, Sxx, shading=shading)
+        plt.pcolormesh(times, freqs, 10 * np.log10(Sxx))
         plt.colorbar(label='csd module')
         plt.xlabel('UT Time (s)')
         plt.ylabel('Frequency (Hz)')
