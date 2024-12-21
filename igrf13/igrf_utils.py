@@ -15,19 +15,25 @@ Functions for computing main field, the non-linear coefficients of the field,
 """
 
 import os
-import numpy as np
-from numpy import degrees, radians
-from math import pi
+import time
 import warnings
+from math import pi
+
+import numpy as np
+from astropy.time import Time
+from numpy import degrees, radians
+from scipy import interpolate
 
 r2d = np.rad2deg
 d2r = np.deg2rad
 
-class igrf: # A simple class to put the igrf file values into
-  def __init__(self, time, coeffs, parameters):
-     self.time = time
-     self.coeffs = coeffs
-     self.parameters = parameters
+
+class igrf:  # A simple class to put the igrf file values into
+    def __init__(self, time, coeffs, parameters):
+        self.time = time
+        self.coeffs = coeffs
+        self.parameters = parameters
+
 
 def check_int(s):
     """Convert to integer."""
@@ -35,14 +41,15 @@ def check_int(s):
         return int(s)
     except ValueError:
         raise ValueError(f'Could not convert {s} to integer.')
-        
+
+
 def check_float(s):
     """Convert to float."""
     try:
         return float(s)
     except ValueError:
         raise ValueError(f'Could not convert {s} to float.')
-        
+
 
 def load_shcfile(filepath, leap_year=None):
     """
@@ -94,17 +101,16 @@ def load_shcfile(filepath, leap_year=None):
         # unpack parameter line
         keys = ['SHC', 'nmin', 'nmax', 'N', 'order', 'step', 'start_year', 'end_year']
         parameters = dict(zip(keys, values))
-        
-        time = data[:parameters['N']]
-        coeffs = data[parameters['N']:].reshape((-1, parameters['N']+2))
-        coeffs = np.squeeze(coeffs[:, 2:])  # discard columns with n and m
 
+        time = data[:parameters['N']]
+        coeffs = data[parameters['N']:].reshape((-1, parameters['N'] + 2))
+        coeffs = np.squeeze(coeffs[:, 2:])  # discard columns with n and m
 
     return igrf(time, coeffs, parameters)
 
+
 def check_lat_lon_bounds(latd, latm, lond, lonm):
-    
-    """ Check the bounds of the given lat, long are within -90 to +90 and -180 
+    """ Check the bounds of the given lat, long are within -90 to +90 and -180
     to +180 degrees 
     
     Paramters
@@ -119,7 +125,7 @@ def check_lat_lon_bounds(latd, latm, lond, lonm):
     Otherwise, an exception is raised
     
     """
-    
+
     if latd < -90 or latd > 90 or latm < -60 or latm > 60:
         raise ValueError(f'Latitude {latd} or {latm} out of bounds.')
     if lond < -360 or lond > 360 or lonm < -60 or lonm > 60:
@@ -128,18 +134,18 @@ def check_lat_lon_bounds(latd, latm, lond, lonm):
         raise ValueError(f'Lat mins {latm} and {lond} out of bounds.')
     if lonm < 0 and lond != 0:
         raise ValueError(f'Longitude mins {lonm} and {lond} out of bounds.')
-        
-              
+
     # Convert to decimal degrees        
     if (latd < 0):
         latm = -latm
-    lat = latd + latm/60.0
+    lat = latd + latm / 60.0
 
     if (lond < 0):
         lonm = -lonm
-    lon = lond + lonm/60.0
-    
+    lon = lond + lonm / 60.0
+
     return lat, lon
+
 
 def gg_to_geo(h, gdcolat):
     """
@@ -176,27 +182,27 @@ def gg_to_geo(h, gdcolat):
     """
     # Use WGS-84 ellipsoid parameters
 
-    eqrad = 6378.137 # equatorial radius
-    flat  = 1/298.257223563
-    plrad = eqrad*(1-flat) # polar radius
-    ctgd  = np.cos(np.deg2rad(gdcolat))
-    stgd  = np.sin(np.deg2rad(gdcolat))
-    a2    = eqrad*eqrad
-    a4    = a2*a2
-    b2    = plrad*plrad
-    b4    = b2*b2
-    c2    = ctgd*ctgd
-    s2    = 1-c2
-    rho   = np.sqrt(a2*s2 + b2*c2)
-    
-    rad   = np.sqrt(h*(h+2*rho) + (a4*s2+b4*c2)/rho**2)
+    eqrad = 6378.137  # equatorial radius
+    flat = 1 / 298.257223563
+    plrad = eqrad * (1 - flat)  # polar radius
+    ctgd = np.cos(np.deg2rad(gdcolat))
+    stgd = np.sin(np.deg2rad(gdcolat))
+    a2 = eqrad * eqrad
+    a4 = a2 * a2
+    b2 = plrad * plrad
+    b4 = b2 * b2
+    c2 = ctgd * ctgd
+    s2 = 1 - c2
+    rho = np.sqrt(a2 * s2 + b2 * c2)
 
-    cd    = (h+rho)/rad
-    sd    = (a2-b2)*ctgd*stgd/(rho*rad)
-    
-    cthc  = ctgd*cd - stgd*sd           # Also: sthc = stgd*cd + ctgd*sd
-    thc   = np.rad2deg(np.arccos(cthc)) # arccos returns values in [0, pi]
-    
+    rad = np.sqrt(h * (h + 2 * rho) + (a4 * s2 + b4 * c2) / rho ** 2)
+
+    cd = (h + rho) / rad
+    sd = (a2 - b2) * ctgd * stgd / (rho * rad)
+
+    cthc = ctgd * cd - stgd * sd  # Also: sthc = stgd*cd + ctgd*sd
+    thc = np.rad2deg(np.arccos(cthc))  # arccos returns values in [0, pi]
+
     return rad, thc, sd, cd
 
 
@@ -234,54 +240,52 @@ def geo_to_gg(radius, theta):
     vol. 30, num. 3, pp. 957-961
 
     """
-    
+
     # Use WGS-84 ellipsoid parameters
-    a =  6378.137  # equatorial radius
-    b =  6356.752  # polar radius
-    
-    a2 = a**2
-    b2 = b**2
+    a = 6378.137  # equatorial radius
+    b = 6356.752  # polar radius
+
+    a2 = a ** 2
+    b2 = b ** 2
 
     e2 = (a2 - b2) / a2  # squared eccentricity
-    e4 = e2*e2
+    e4 = e2 * e2
     ep2 = (a2 - b2) / b2  # squared primed eccentricity
 
     r = radius * np.sin(radians(theta))
     z = radius * np.cos(radians(theta))
 
-    r2 = r**2
-    z2 = z**2
+    r2 = r ** 2
+    z2 = z ** 2
 
-    F = 54*b2*z2
+    F = 54 * b2 * z2
 
-    G = r2 + (1. - e2)*z2 - e2*(a2 - b2)
+    G = r2 + (1. - e2) * z2 - e2 * (a2 - b2)
 
-    c = e4*F*r2 / G**3
+    c = e4 * F * r2 / G ** 3
 
-    s = (1. + c + np.sqrt(c**2 + 2*c))**(1./3)
+    s = (1. + c + np.sqrt(c ** 2 + 2 * c)) ** (1. / 3)
 
-    P = F / (3*(s + 1./s + 1.)**2 * G**2)
+    P = F / (3 * (s + 1. / s + 1.) ** 2 * G ** 2)
 
-    Q = np.sqrt(1. + 2*e4*P)
+    Q = np.sqrt(1. + 2 * e4 * P)
 
-    r0 = -P*e2*r / (1. + Q) + np.sqrt(
-        0.5*a2*(1. + 1./Q) - P*(1. - e2)*z2 / (Q*(1. + Q)) - 0.5*P*r2)
+    r0 = -P * e2 * r / (1. + Q) + np.sqrt(0.5 * a2 * (1. + 1. / Q) - P * (1. - e2) * z2 / (Q * (1. + Q)) - 0.5 * P * r2)
 
-    U = np.sqrt((r - e2*r0)**2 + z2)
+    U = np.sqrt((r - e2 * r0) ** 2 + z2)
 
-    V = np.sqrt((r - e2*r0)**2 + (1. - e2)*z2)
+    V = np.sqrt((r - e2 * r0) ** 2 + (1. - e2) * z2)
 
-    z0 = b2*z/(a*V)
+    z0 = b2 * z / (a * V)
 
-    height = U*(1. - b2 / (a*V))
+    height = U * (1. - b2 / (a * V))
 
-    beta = 90. - degrees(np.arctan2(z + ep2*z0, r))
+    beta = 90. - degrees(np.arctan2(z + ep2 * z0, r))
 
     return height, beta
 
 
-def synth_values(coeffs, radius, theta, phi, \
-                 nmax=None, nmin=None, grid=None):
+def synth_values(coeffs, radius, theta, phi, nmax=None, nmin=None, grid=None):
     """
     Based on chaosmagpy from Clemens Kloss (DTU Space, Copenhagen)
     Computes radial, colatitude and azimuthal field components from the
@@ -418,8 +422,7 @@ def synth_values(coeffs, radius, theta, phi, \
     if nmax > nmax_coeffs:
         warnings.warn('Supplied nmax = {0} and nmin = {1} is '
                       'incompatible with number of model coefficients. '
-                      'Using nmax = {2} instead.'.format(
-                        nmax, nmin, nmax_coeffs))
+                      'Using nmax = {2} instead.'.format(nmax, nmin, nmax_coeffs))
         nmax = nmax_coeffs
 
     if nmax < nmin:
@@ -435,8 +438,7 @@ def synth_values(coeffs, radius, theta, phi, \
 
     # get shape of broadcasted result
     try:
-        b = np.broadcast(radius, theta, phi,
-                         np.broadcast_to(0, coeffs.shape[:-1]))
+        b = np.broadcast(radius, theta, phi, np.broadcast_to(0, coeffs.shape[:-1]))
     except ValueError:
         print('Cannot broadcast grid shapes (excl. last dimension of coeffs):')
         print(f'radius: {radius.shape}')
@@ -448,7 +450,7 @@ def synth_values(coeffs, radius, theta, phi, \
     grid_shape = b.shape
 
     # initialize radial dependence given the source
-    r_n = radius**(-(nmin+2))
+    r_n = radius ** (-(nmin + 2))
 
     # compute associated Legendre polynomials as (n, m, theta-points)-array
     Pnm = legendre_poly(nmax, theta)
@@ -458,45 +460,40 @@ def synth_values(coeffs, radius, theta, phi, \
 
     # calculate cos(m*phi) and sin(m*phi) as (m, phi-points)-array
     phi = radians(phi)
-    cmp = np.cos(np.multiply.outer(np.arange(nmax+1), phi))
-    smp = np.sin(np.multiply.outer(np.arange(nmax+1), phi))
+    cmp = np.cos(np.multiply.outer(np.arange(nmax + 1), phi))
+    smp = np.sin(np.multiply.outer(np.arange(nmax + 1), phi))
 
     # allocate arrays in memory
     B_radius = np.zeros(grid_shape)
     B_theta = np.zeros(grid_shape)
     B_phi = np.zeros(grid_shape)
 
-    num = nmin**2 - 1
-    for n in range(nmin, nmax+1):
-        B_radius += (n+1) * Pnm[n, 0] * r_n * coeffs[..., num]
+    num = nmin ** 2 - 1
+    for n in range(nmin, nmax + 1):
+        B_radius += (n + 1) * Pnm[n, 0] * r_n * coeffs[..., num]
 
-        B_theta += -Pnm[0, n+1] * r_n * coeffs[..., num]
+        B_theta += -Pnm[0, n + 1] * r_n * coeffs[..., num]
 
         num += 1
 
-        for m in range(1, n+1):
-            B_radius += ((n+1) * Pnm[n, m] * r_n
-                             * (coeffs[..., num] * cmp[m]
-                                + coeffs[..., num+1] * smp[m]))
-            
-            B_theta += (-Pnm[m, n+1] * r_n
-                        * (coeffs[..., num] * cmp[m]
-                           + coeffs[..., num+1] * smp[m]))
+        for m in range(1, n + 1):
+            B_radius += ((n + 1) * Pnm[n, m] * r_n * (coeffs[..., num] * cmp[m] + coeffs[..., num + 1] * smp[m]))
+
+            B_theta += (-Pnm[m, n + 1] * r_n * (coeffs[..., num] * cmp[m] + coeffs[..., num + 1] * smp[m]))
 
             with np.errstate(divide='ignore', invalid='ignore'):
                 # handle poles using L'Hopital's rule
-                div_Pnm = np.where(theta == 0., Pnm[m, n+1], Pnm[n, m] / sinth)
-                div_Pnm = np.where(theta == degrees(pi), -Pnm[m, n+1], div_Pnm)
+                div_Pnm = np.where(theta == 0., Pnm[m, n + 1], Pnm[n, m] / sinth)
+                div_Pnm = np.where(theta == degrees(pi), -Pnm[m, n + 1], div_Pnm)
 
-            B_phi += (m * div_Pnm * r_n
-                      * (coeffs[..., num] * smp[m]
-                         - coeffs[..., num+1] * cmp[m]))
+            B_phi += (m * div_Pnm * r_n * (coeffs[..., num] * smp[m] - coeffs[..., num + 1] * cmp[m]))
 
             num += 2
 
         r_n = r_n / radius  # equivalent to r_n = radius**(-(n+2))
- 
+
     return B_radius, B_theta, B_phi
+
 
 def legendre_poly(nmax, theta):
     """
@@ -521,44 +518,43 @@ def legendre_poly(nmax, theta):
     """
 
     costh = np.cos(radians(theta))
-    sinth = np.sqrt(1-costh**2)
+    sinth = np.sqrt(1 - costh ** 2)
 
-    Pnm = np.zeros((nmax+1, nmax+2) + costh.shape)
+    Pnm = np.zeros((nmax + 1, nmax + 2) + costh.shape)
     Pnm[0, 0] = 1  # is copied into trailing dimenions
     Pnm[1, 1] = sinth  # write theta into trailing dimenions via broadcasting
 
-    rootn = np.sqrt(np.arange(2 * nmax**2 + 1))
+    rootn = np.sqrt(np.arange(2 * nmax ** 2 + 1))
 
     # Recursion relations after Langel "The Main Field" (1987),
     # eq. (27) and Table 2 (p. 256)
     for m in range(nmax):
-        Pnm_tmp = rootn[m+m+1] * Pnm[m, m]
-        Pnm[m+1, m] = costh * Pnm_tmp
+        Pnm_tmp = rootn[m + m + 1] * Pnm[m, m]
+        Pnm[m + 1, m] = costh * Pnm_tmp
 
         if m > 0:
-            Pnm[m+1, m+1] = sinth*Pnm_tmp / rootn[m+m+2]
+            Pnm[m + 1, m + 1] = sinth * Pnm_tmp / rootn[m + m + 2]
 
-        for n in np.arange(m+2, nmax+1):
+        for n in np.arange(m + 2, nmax + 1):
             d = n * n - m * m
             e = n + n - 1
-            Pnm[n, m] = ((e * costh * Pnm[n-1, m] - rootn[d-e] * Pnm[n-2, m])
-                         / rootn[d])
+            Pnm[n, m] = ((e * costh * Pnm[n - 1, m] - rootn[d - e] * Pnm[n - 2, m]) / rootn[d])
 
     # dP(n,m) = Pnm(m,n+1) is the derivative of P(n,m) vrt. theta
     Pnm[0, 2] = -Pnm[1, 1]
     Pnm[1, 2] = Pnm[1, 0]
-    for n in range(2, nmax+1):
-        Pnm[0, n+1] = -np.sqrt((n*n + n) / 2) * Pnm[n, 1]
-        Pnm[1, n+1] = ((np.sqrt(2 * (n*n + n)) * Pnm[n, 0]
-                       - np.sqrt((n*n + n - 2)) * Pnm[n, 2]) / 2)
+    for n in range(2, nmax + 1):
+        Pnm[0, n + 1] = -np.sqrt((n * n + n) / 2) * Pnm[n, 1]
+        Pnm[1, n + 1] = ((np.sqrt(2 * (n * n + n)) * Pnm[n, 0] - np.sqrt((n * n + n - 2)) * Pnm[n, 2]) / 2)
 
         for m in np.arange(2, n):
-            Pnm[m, n+1] = (0.5*(np.sqrt((n + m) * (n - m + 1)) * Pnm[n, m-1]
-                           - np.sqrt((n + m + 1) * (n - m)) * Pnm[n, m+1]))
+            Pnm[m, n + 1] = (0.5 * (
+                    np.sqrt((n + m) * (n - m + 1)) * Pnm[n, m - 1] - np.sqrt((n + m + 1) * (n - m)) * Pnm[n, m + 1]))
 
-        Pnm[n, n+1] = np.sqrt(2 * n) * Pnm[n, n-1] / 2
+        Pnm[n, n + 1] = np.sqrt(2 * n) * Pnm[n, n - 1] / 2
 
     return Pnm
+
 
 def xyz2dhif(x, y, z):
     """Calculate D, H, I and F from (X, Y, Z)
@@ -582,12 +578,12 @@ def xyz2dhif(x, y, z):
 
 
     """
-    hsq = x*x + y*y
-    hoz  = np.sqrt(hsq)
-    eff = np.sqrt(hsq + z*z)
-    dec = np.arctan2(y,x)
-    inc = np.arctan2(z,hoz)
-    
+    hsq = x * x + y * y
+    hoz = np.sqrt(hsq)
+    eff = np.sqrt(hsq + z * z)
+    dec = np.arctan2(y, x)
+    inc = np.arctan2(z, hoz)
+
     return r2d(dec), hoz, r2d(inc), eff
 
 
@@ -617,12 +613,65 @@ def xyz2dhif_sv(x, y, z, xdot, ydot, zdot):
 
 
     """
-    h2  = x*x + y*y
-    h   = np.sqrt(h2)
-    f2  = h2 + z*z
-    hdot = (x*xdot + y*ydot)/h
-    fdot = (x*xdot + y*ydot + z*zdot)/np.sqrt(f2)
-    ddot = r2d((xdot*y - ydot*x)/h2)*60
-    idot = r2d((hdot*z - h*zdot)/f2)*60
-    
+    h2 = x * x + y * y
+    h = np.sqrt(h2)
+    f2 = h2 + z * z
+    hdot = (x * xdot + y * ydot) / h
+    fdot = (x * xdot + y * ydot + z * zdot) / np.sqrt(f2)
+    ddot = r2d((xdot * y - ydot * x) / h2) * 60
+    idot = r2d((hdot * z - h * zdot) / f2) * 60
+
     return ddot, hdot, idot, fdot
+
+
+def get_igrf13_b_nec(timestamps, latitudes, longitudes, radiuses, igrf13shc_path="IGRF13.shc", print_: bool = False):
+    """
+    :param timestamps: ndarray consisting of np.datetime64
+    :param latitudes: -90,90, degree
+    :param longitudes: -180,180, degree
+    :param radiuses: km
+    :param igrf13shc_path:
+    :param print_:
+    :return:
+    """
+    # Load in the file of coefficients
+    igrf = load_shcfile(igrf13shc_path, None)
+    f = interpolate.interp1d(igrf.time, igrf.coeffs, fill_value='extrapolate')
+    # get the decimal year corresponds to timestamps
+    decimal_dates = Time(timestamps).decimalyear
+    # get magnetic field vector in NEC coordinates system
+    Xs = []
+    Ys = []
+    Zs = []
+    whole_loop_st = time.time()
+    for timestamp, latitude, longitude, radius in zip(decimal_dates, latitudes, longitudes, radiuses):
+        # st = time.time()
+        coeffs = f(timestamp)
+        latd = check_float(latitude)
+        lond = check_float(longitude)
+        lat, lon = check_lat_lon_bounds(latd, 0, lond, 0)  # QA:: answer the latitudes and longitudes range
+        colat = 90 - lat
+        radius = check_float(radius)
+        # Compute the main field B_r, B_theta and B_phi value for the location(s)
+        Br, Bt, Bp = synth_values(coeffs.T, radius, colat, lon, igrf.parameters['nmax'])
+        X = -Bt
+        Y = Bp
+        Z = -Br
+        if print_:
+            print('North component (X)     :', '{: .1f}'.format(X), 'nT')
+            print('East component (Y)      :', '{: .1f}'.format(Y), 'nT')
+            print('Vertical component (Z)  :', '{: .1f}'.format(Z), 'nT')
+        Xs.append(X)
+        Ys.append(Y)
+        Zs.append(Z)  # et = time.time()  # print(f"one loop takes time: {et-st}s")
+    whole_loop_et = time.time()
+    print(f"the whole loop takes time: {whole_loop_et - whole_loop_st}s")
+    return Xs, Ys, Zs
+
+
+def main():
+    pass  # t1 = np.datetime64("2016-03-11T06:37:00", 'ns')  # t2 = np.datetime64("2016-03-11T06:39:00", 'ns')  # latitudes = np.array([50, 60])  # longitudes = np.array([0, -180])  # altitudes = np.array([6378 + 400, 6378 + 400])  # get_igrf13_b_nec(np.array([t1, t2]), latitudes, longitudes, altitudes, print_=True)
+
+
+if __name__ == "__main__":
+    main()

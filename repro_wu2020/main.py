@@ -7,7 +7,7 @@
 import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation as R
-from scipy.signal import stft coherence
+from scipy.signal import stft, coherence
 
 from pyaw import swarm, utils_spectral,utils_preprocess
 from pyaw.swarm import Swarm
