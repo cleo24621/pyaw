@@ -13,7 +13,8 @@
 """
 
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime
+from pathlib import Path
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -21,18 +22,59 @@ import numpy as np
 import pandas as pd
 from viresclient import SwarmRequest
 
-from pyaw import utils_preprocess, configs, utils_spectral
+from pyaw import utils_preprocess, utils_spectral
 
 
-def save_SW_EFIx_TCT16(start, end, satellite='A'):
+def is_valid_datetime_format(date_string):
+    """
+    determine if the string is '%Y%m%dT%H%M%S' format.
+    :param date_string:
+    :return:
+    """
+    try:
+        # Attempt to parse the string with the given format
+        datetime.strptime(date_string, '%Y%m%dT%H%M%S')
+        return True
+    except ValueError:
+        # If parsing fails, the format is incorrect
+        return False
+
+
+def get_root_dir_path():
+    # Get the current script directory
+    current_dir = Path(__file__).resolve()
+
+    # Traverse up to the root, looking for a specific file or folder
+    while not (current_dir / '.git').exists():  # Or any other file/folder
+        current_dir = current_dir.parent
+    print("Project Root Directory:", current_dir)
+    return current_dir
+
+
+def save_SW_EFIx_TCT16(start, end, satellite, sdir, sfn):
     """
     can get 1d data
+    :param sfn: name of the file saved. the suffix is '.pkl' because the save method is 'pd.DataFrame.to_pickle'
+    :param sdir: path of the file saved.
     :param start: '20240812T000000' format
     :param end: same as 'start'
     :param satellite: 'A', 'B' or 'C'
     :return:
     """
-    # get data
+    # QA:: doesn't assign the value returned by the function to a variable. will this have problems? answer: don't have problems.
+    is_valid_datetime_format(start)
+    is_valid_datetime_format(end)
+    # determine if the difference between start time and end time is larger than 1 day
+    if abs(datetime.strptime(end, '%Y%m%dT%H%M%S') - datetime.strptime(start, '%Y%m%dT%H%M%S')) > timedelta(days=1):
+        raise "the time range of SW_EFIx_TCT16 data requested is larger than 1 day"  # QA:: the sytax wrong or right? answer: right
+    # determine if the file exits
+    dir_path = Path(sdir)
+    dir_path.mkdir(parents=True, exist_ok=True)
+    file_path = dir_path / Path(sfn)
+    if file_path.exists() and file_path.is_file():
+        print(f"{file_path} already exists, skip save.")
+        return None
+    # variables
     tct_vars = [  # Satellite velocity in NEC frame
         "VsatC", "VsatE", "VsatN",  # Geomagnetic field components derived from 1Hz product
         #  (in satellite-track coordinates)
@@ -52,51 +94,48 @@ def save_SW_EFIx_TCT16(start, end, satellite='A'):
         #  redundant with VirES auxiliaries, QDLat & MLT
         "Latitude_QD", "MLT_QD",  # Refer to release notes link above for details:
         "Calibration_flags", "Quality_flags", ]
+    # QA:: no geo info? answer: default have
+    # get data
     request = SwarmRequest()
     request.set_collection(f"SW_EXPT_EFI{satellite}_TCT16")
     request.set_products(measurements=tct_vars)
     data = request.get_between(start, end)
     df = data.as_dataframe()
-    # save
-    sdir = rf"V:\aw\swarm\{satellite}\efi16"
-    sfn = f'sw_efi16{satellite}_{start}_{end}_0.pkl'
-    os.makedirs(sdir, exist_ok=True)  # dir exit doesn't raise error
-    sfp = os.path.join(sdir, sfn)
-    if os.path.isfile(sfp):
-        print(f"{sfn} already exists, skip save.")
-        return None
-    else:
-        df.to_pickle(sfp)
-        print(f"{sfn} saved")
-        return None
+    df.to_pickle(file_path)
+    print(f"{file_path} saved")
 
 
-def save_SW_MAGx_HR_1B(start, end, satellite='A'):
+def save_SW_MAGx_HR_1B(start, end, satellite, sdir, sfn):
     """
-    usually get 1h data, failed to get 1d data. So combined with `get_time_strs_forB()` to get 1d data.
+    usually get 1h data, failed to get 1d data! So combined with `get_time_strs_forB()` to get 1d data.
     :param start: '20240812T000000' format
     :param end: same as 'start'
     :param satellite: 'A', 'B' or 'C'
     :return:
     """
+    is_valid_datetime_format(start)
+    is_valid_datetime_format(end)
+    # determine if the difference between start time and end time is larger than 1 hour
+    if abs(datetime.strptime(end, '%Y%m%dT%H%M%S') - datetime.strptime(start, '%Y%m%dT%H%M%S')) > timedelta(hours=1):
+        raise "the time range of SW_MAGx_HR_1B data requested is larger than 1 hour"
+    # determine if the file exits
+    dir_path = Path(sdir)
+    dir_path.mkdir(parents=True, exist_ok=True)
+    file_path = dir_path / Path(sfn)
+    if file_path.exists() and file_path.is_file():
+        print(f"{file_path} already exists, skip save.")
+        return None
     # get data
     request = SwarmRequest()
     request.set_collection(f"SW_OPER_MAG{satellite}_HR_1B")
-    request.set_products(measurements=["B_NEC","B_VFM","B_error","q_NEC_CRF","Att_error","Flags_B","Flags_q","Flags_Platform"], )
+    request.set_products(
+        measurements=['F', 'B_VFM', 'B_NEC', 'dB_Sun', 'dB_AOCS', 'dB_other', 'B_error', 'q_NEC_CRF', 'Att_error',
+                      'Flags_B', 'Flags_q', 'Flags_Platform'], )
     data = request.get_between(start_time=start, end_time=end, asynchronous=False)
     df = data.as_dataframe()
     # save
-    sdir = rf"V:\aw\swarm\{satellite}\vfm50"
-    sfn = f'sw_vfm50{satellite}_{start}_{end}_0.pkl'
-    os.makedirs(sdir, exist_ok=True)  # dir exit doesn't raise error
-    sfp = os.path.join(sdir, sfn)
-    if os.path.isfile(sfp):
-        print(f"{sfn} already exists, skip save.")
-        return None
-    else:
-        df.to_pickle(sfp)
-        print(f"{sfn} saved")
-        return None
+    df.to_pickle(file_path)
+    print(f"{file_path} saved")
 
 
 def get_time_strs_forB(start: str, num_elements: int) -> list:
@@ -112,9 +151,9 @@ def get_time_strs_forB(start: str, num_elements: int) -> list:
 
 
 class Swarm:
-    def __init__(self, fp: str, payload: str, start: str, end: str,
-                 handle_outliers: Optional[bool] = True, std_times: Optional[float] = None,
-                 if_mv: Optional[bool] = None, window_sec: Optional[float] = None, threshold: Optional[float] = None):
+    def __init__(self, fp: str, payload: str, start: str, end: str, handle_outliers: Optional[bool] = True,
+                 std_times: Optional[float] = None, if_mv: Optional[bool] = None, window_sec: Optional[float] = None,
+                 threshold: Optional[float] = None):
         assert payload in ['efi16', 'vfm50'], "payload should be 'efi16' or 'vfm50'"
         self.fs_efi16 = 16
         self.fs_vfm50 = 50
@@ -124,7 +163,9 @@ class Swarm:
             self.start = start
             self.end = end
             # make sure the file include the extended time range
-            self.df = self.df.loc[pd.to_datetime(self.start) - pd.Timedelta(20,'s'):pd.to_datetime(self.end) + pd.Timedelta(20,'s')]  # 解决滑动平均数据点个数小于窗口所需数据点个数的情况
+            self.df = self.df.loc[
+                      pd.to_datetime(self.start) - pd.Timedelta(20, 's'):pd.to_datetime(self.end) + pd.Timedelta(20,
+                                                                                                                 's')]  # 解决滑动平均数据点个数小于窗口所需数据点个数的情况
         self.df = self.df.rename_axis('datetime')
         self.payload = payload
         self.handle_outliers = handle_outliers
@@ -368,80 +409,85 @@ def figure_phase(signal1, signal2, figsize=(10, 5)):
     return None
 
 
-def main(compo='12'):
-    assert compo in ['12', '21'], "compo should be '12' or '21'"
-    fp_e = r"\\Diskstation1\file_three\aw\swarm\A\efi16\sw_efi16A_20160311T000000_20160311T235959_0.pkl"
-    fp_b = r"\\Diskstation1\file_three\aw\swarm\A\vfm50\sw_vfm50A_20160311T060000_20160311T070000_0.pkl"
-    swarm_e = Swarm(fp_e, 'efi16')
-    swarm_b = Swarm(fp_b, 'vfm50')
-    df_e = swarm_e.df
-    df_b = swarm_b.df
-    if compo == '21':
-        e = df_e['eh1_enu2']
-        b = df_b['b1_enu1']
-    else:
-        e = df_e['eh1_enu1']
-        b = df_b['b1_enu2']
-    # plot figure baselined
-    signal1 = e - e.mean()
-    signal2 = b - b.mean()
-    figure_baselined(signal1, signal2)
-    # plot figure filter, spectrogram
-    signal1 = e
-    signal2 = b
-    figure_filter(signal1, signal2)
-    spectrogram_e = utils_spectral.Spectrogram(signal1, 16)
-    spectrogram_e.plot_spectrogram()
-    spectrogram_b = utils_spectral.Spectrogram(signal2, 50)
-    spectrogram_b.plot_spectrogram()
-    # plot csd_module, phase
-    signal1 = e
-    signal2 = b
-    signal2 = utils_preprocess.align_high2low(signal2, signal1)
-    figure_csd_module(signal1, signal2, 16)
-    figure_csd_phase(signal1, signal2, 16)
-    # static
-    # plot filter
-    signal1 = e
-    signal2 = b
-    start = pd.to_datetime('20160311T064705')
-    end = pd.to_datetime('20160311T064725')
-    signal1 = signal1.loc[start:end]
-    signal2 = signal2.loc[start:end]
-    figure_filter(signal1, signal2)
-    # plot psd, ratio, cwt_phase_hist_counts
-    signal1 = e
-    signal2 = b
-    signal1 = signal1.loc[start:end]
-    signal2 = signal2.loc[start:end]
-    signal2 = utils_preprocess.align_high2low(signal2, signal1)
-    figure_psd(signal1, signal2, 16)
-    figure_ratio(signal1, signal2, 16)
-    # plot
-    figure_phase(signal1, signal2)
-    # active
-    # plot filter
-    signal1 = e
-    signal2 = b
-    start = pd.to_datetime('20160311T064700')
-    # start = pd.to_datetime('20160311T064735')
-    end = pd.to_datetime('20160311T064900')
-    # end = pd.to_datetime('20160311T064755')
-    signal1 = signal1.loc[start:end]
-    signal2 = signal2.loc[start:end]  # aligned
-    figure_filter(signal1, signal2)
-    # plot psd, ratio, cwt_phase_hist_counts
-    signal1 = e
-    signal2 = b
-    signal1 = signal1.loc[start:end]
-    signal2 = signal2.loc[start:end]
-    signal2 = utils_preprocess.align_high2low(signal2, signal1)
-    figure_psd(signal1, signal2, 16)
-    figure_ratio(signal1, signal2, 16)
-    # plot
-    figure_phase(signal1, signal2)
-    cwt = utils_spectral.CWT(signal1, signal2,sampling_period=1/16)
-    cwt.plot_module()
+def main():
+    save_SW_MAGx_HR_1B('20160311T064700', '20160311T064900', 'A', "D:/cleo/master/pyaw/data/swarm/miles2018",
+                       "vfm50.pkl")
+
+
+# def main(compo='12'):
+#     assert compo in ['12', '21'], "compo should be '12' or '21'"
+#     fp_e = r"\\Diskstation1\file_three\aw\swarm\A\efi16\sw_efi16A_20160311T000000_20160311T235959_0.pkl"
+#     fp_b = r"\\Diskstation1\file_three\aw\swarm\A\vfm50\sw_vfm50A_20160311T060000_20160311T070000_0.pkl"
+#     swarm_e = Swarm(fp_e, 'efi16')
+#     swarm_b = Swarm(fp_b, 'vfm50')
+#     df_e = swarm_e.df
+#     df_b = swarm_b.df
+#     if compo == '21':
+#         e = df_e['eh1_enu2']
+#         b = df_b['b1_enu1']
+#     else:
+#         e = df_e['eh1_enu1']
+#         b = df_b['b1_enu2']
+#     # plot figure baselined
+#     signal1 = e - e.mean()
+#     signal2 = b - b.mean()
+#     figure_baselined(signal1, signal2)
+#     # plot figure filter, spectrogram
+#     signal1 = e
+#     signal2 = b
+#     figure_filter(signal1, signal2)
+#     spectrogram_e = utils_spectral.Spectrogram(signal1, 16)
+#     spectrogram_e.plot_spectrogram()
+#     spectrogram_b = utils_spectral.Spectrogram(signal2, 50)
+#     spectrogram_b.plot_spectrogram()
+#     # plot csd_module, phase
+#     signal1 = e
+#     signal2 = b
+#     signal2 = utils_preprocess.align_high2low(signal2, signal1)
+#     figure_csd_module(signal1, signal2, 16)
+#     figure_csd_phase(signal1, signal2, 16)
+#     # static
+#     # plot filter
+#     signal1 = e
+#     signal2 = b
+#     start = pd.to_datetime('20160311T064705')
+#     end = pd.to_datetime('20160311T064725')
+#     signal1 = signal1.loc[start:end]
+#     signal2 = signal2.loc[start:end]
+#     figure_filter(signal1, signal2)
+#     # plot psd, ratio, cwt_phase_hist_counts
+#     signal1 = e
+#     signal2 = b
+#     signal1 = signal1.loc[start:end]
+#     signal2 = signal2.loc[start:end]
+#     signal2 = utils_preprocess.align_high2low(signal2, signal1)
+#     figure_psd(signal1, signal2, 16)
+#     figure_ratio(signal1, signal2, 16)
+#     # plot
+#     figure_phase(signal1, signal2)
+#     # active
+#     # plot filter
+#     signal1 = e
+#     signal2 = b
+#     start = pd.to_datetime('20160311T064700')
+#     # start = pd.to_datetime('20160311T064735')
+#     end = pd.to_datetime('20160311T064900')
+#     # end = pd.to_datetime('20160311T064755')
+#     signal1 = signal1.loc[start:end]
+#     signal2 = signal2.loc[start:end]  # aligned
+#     figure_filter(signal1, signal2)
+#     # plot psd, ratio, cwt_phase_hist_counts
+#     signal1 = e
+#     signal2 = b
+#     signal1 = signal1.loc[start:end]
+#     signal2 = signal2.loc[start:end]
+#     signal2 = utils_preprocess.align_high2low(signal2, signal1)
+#     figure_psd(signal1, signal2, 16)
+#     figure_ratio(signal1, signal2, 16)
+#     # plot
+#     figure_phase(signal1, signal2)
+#     cwt = utils_spectral.CWT(signal1, signal2,sampling_period=1/16)
+#     cwt.plot_module()
 
 
 if __name__ == "__main__":
