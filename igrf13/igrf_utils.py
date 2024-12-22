@@ -624,7 +624,7 @@ def xyz2dhif_sv(x, y, z, xdot, ydot, zdot):
     return ddot, hdot, idot, fdot
 
 
-def get_igrf13_b_nec(timestamps, latitudes, longitudes, radiuses, igrf13shc_path="IGRF13.shc", print_: bool = False):
+def get_igrf13_b_nec(timestamps, latitudes, longitudes, radiuses, igrf13shc_path="IGRF13.shc", print_: bool = False)->tuple:
     """
     :param timestamps: ndarray consisting of np.datetime64
     :param latitudes: -90,90, degree
@@ -632,7 +632,7 @@ def get_igrf13_b_nec(timestamps, latitudes, longitudes, radiuses, igrf13shc_path
     :param radiuses: km
     :param igrf13shc_path:
     :param print_:
-    :return:
+    :return: the type of the tuple is (list, list, list)
     """
     # Load in the file of coefficients
     igrf = load_shcfile(igrf13shc_path, None)
