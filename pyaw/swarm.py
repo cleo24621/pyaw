@@ -201,6 +201,7 @@ class Swarm:
         :return:
         """
         # 坐标变换需要用到的角度
+        # todo:: change
         theta = np.arccos(
             self.df['VsatN'] ** 2 / (np.abs(self.df['VsatN']) * np.sqrt(self.df['VsatN'] ** 2 + self.df['VsatE'] ** 2)))
         # todo: without quality control to Ehx, Ehy; without outliers delete. (they will cancel each other?)
