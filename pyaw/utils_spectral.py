@@ -264,7 +264,6 @@ class TimeCSD:
 #         plt.show()
 #     return pd.Series(index=positive_frequencies, data=positive_amplitude_spectrum)
 
-
 class CWT:
     def __init__(self, signal1, signal2, scales=np.arange(1, 128), wavelet='cmor1.5-1.0', sampling_period=1 / 16):
         """

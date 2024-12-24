@@ -1,12 +1,14 @@
-import numpy as np
+def my_function(my_int: int | None = None):
+    """
+    A function with an integer parameter that can be None.
 
-# Original datetime string
-datetime_string = "20160311T064700"
+    Args:
+        my_int: An integer value or None. Defaults to None.
+    """
+    if my_int is None:
+        print("my_int is None")
+    else:
+        print(f"my_int is: {my_int}")
 
-# Insert delimiters to make it ISO 8601 compliant
-formatted_string = datetime_string[:4] + "-" + datetime_string[4:6] + "-" + datetime_string[6:8] + "T" + datetime_string[9:11] + ":" + datetime_string[11:13] + ":" + datetime_string[13:]
-
-# Convert to numpy.datetime64 with nanosecond precision
-datetime_obj = np.datetime64(formatted_string, 'ns')
-
-print(datetime_obj)
+my_function()
+my_function(5)
