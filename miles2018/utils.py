@@ -4,11 +4,14 @@
 @DATE: 2024/12/24
 @DESCRIPTION: 
 """
+from typing import Optional
+
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from numpy import ndarray
 from scipy.interpolate import interpolate
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, filtfilt, welch
 
 
 def get_3arrays(array):
@@ -60,7 +63,7 @@ def do_rotation(coordinates1, coordinates2, rotation_matrix):
     return vectors12_rotated[:,0],vectors12_rotated[:,1]
 
 
-def set_outliers_nan(array,std_times: float = 1.0, print_: bool = True):
+def set_outliers_nan_std(array, std_times: float = 1.0, print_: bool = True):
     """
     :param array: the array to process
     :param std_times: standard deviation times
@@ -87,7 +90,7 @@ def get_array_interpolated(x,y):
     mask = np.isnan(y_copy)
     # Interpolate
     y_copy[mask] = interpolate.interp1d(x[~mask].astype('int'), y_copy[~mask], kind='linear')(
-        x[mask].astype('int'))
+        x[mask].astype('int'))  # note:: 当x是时间类型事，该方法也支持
     return y_copy
 
 def move_average(array,window, center:bool=True,min_periods: int|None = None):
@@ -101,7 +104,7 @@ def move_average(array,window, center:bool=True,min_periods: int|None = None):
     assert type(window) == int, "window must be an integer"
     # todo:: use the plot of the later part to verify the 'center', 'min_periods' parameters
     array_series = pd.Series(array)
-    array_series_mov_ave = array_series.rolling(window=window, center=center,min_periods=min_periods).mean()  # 'center=True' 得到的结果等于‘结果.mean()=0’
+    array_series_mov_ave = array_series.rolling(window=window, center=center,min_periods=min_periods).mean()  # 'center=True' 得到的结果等于‘结果.mean()=0’，即经过b-b.mean()（baselined）
     return array_series_mov_ave.values
 
 def transform_time_string_to_datetime64ns(time_string):
@@ -180,3 +183,54 @@ def get_ratio_hist_counts(freqs:ndarray, ratios: ndarray,bins:ndarray):
     for i, _ in enumerate(freqs):
         hist_counts[i], _ = np.histogram(ratios[i], bins=bins)
     return hist_counts
+
+def plot_where_is(series):
+    """
+    :param series: pd.Series
+    :return: None
+    """
+    plt.plot(series.isna(), marker='.', linestyle='None', color='red')
+    plt.title('NaN Positions in the Series')
+    plt.show()
+    return None
+
+class FFT:
+    def __init__(self, array, fs):
+        self.array = array
+        self.fs = fs
+
+    def get_fft(self):
+        n = len(self.array)
+        fft_values = np.fft.fft(self.array)  # fft
+        amplitude_spectrum = np.abs(fft_values)  # magnitude of fft
+        phase = np.angle(fft_values)  # phase of fft
+        f_values = np.fft.fftfreq(n, d=1 / self.fs)  # frequencies
+        # only positive frequencies
+        return f_values[:n // 2], amplitude_spectrum[:n // 2], phase[:n // 2]
+
+    def plot_fft(self, figsize=(10, 6), title='fft'):
+        freqs, amps, _ = self.get_fft()
+        fig = plt.figure(figsize=figsize)
+        plt.plot(freqs, amps, color='red')
+        plt.xscale('linear')
+        plt.yscale('log')
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('Amplitude Spectra')
+        plt.grid(which='both', linestyle='--', linewidth=0.5)
+        plt.title(f'{title}: (fs={self.fs})')
+        plt.show()
+        return fig
+
+
+class PSD:
+    def __init__(self, array, fs, nperseg: Optional[int] = None, noverlap: Optional[int] = None, window='hann'):
+        self.array = array
+        self.fs = fs
+        self.nperseg = nperseg
+        self.noverlap = noverlap
+        self.window = window
+
+    def get_psd(self):
+        freqs, Pxx = welch(self.array, fs=self.fs, nperseg=self.nperseg, noverlap=self.noverlap,
+                           window=self.window)
+        return freqs, Pxx

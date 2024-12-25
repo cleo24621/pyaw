@@ -24,13 +24,14 @@ class FFT:
         n = len(self.signal)
         fft_values = np.fft.fft(self.signal.values)  # fft
         amplitude_spectrum = np.abs(fft_values)  # magnitude of fft
+        phase = np.angle(fft_values)  # phase of fft
         f_values = np.fft.fftfreq(n, d=1 / self.fs)  # frequencies
         # only positive frequencies
-        return f_values[:n // 2], amplitude_spectrum[:n // 2]
+        return f_values[:n // 2], amplitude_spectrum[:n // 2], phase[:n // 2]
 
     def plot_fft(self, figsize=(10, 6), title='fft'):
-        freqs, amps = self.get_fft()
-        plt.figure(figsize=figsize)
+        freqs, amps, _ = self.get_fft()
+        fig = plt.figure(figsize=figsize)
         plt.plot(freqs, amps, color='red')
         plt.xscale('linear')
         plt.yscale('log')
@@ -39,7 +40,7 @@ class FFT:
         plt.grid(which='both', linestyle='--', linewidth=0.5)
         plt.title(f'{title}: (fs={self.fs})')
         plt.show()
-        return figure
+        return fig
 
 
 class PSD:
