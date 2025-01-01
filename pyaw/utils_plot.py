@@ -10,6 +10,17 @@ from matplotlib import pyplot as plt
 from numpy.typing import ArrayLike
 
 
+def plot_where_is(series):
+    """
+    :param series: pd.Series
+    :return: None
+    """
+    plt.plot(series.isna(), marker='.', linestyle='None', color='red')
+    plt.title('NaN Positions in the Series')
+    plt.show()
+    return None
+
+
 def compare_before_after_interpolate(series_: pd.Series, method_='linear', figsize=(10, 6)):
     """
     :param series_: the type of index is pd.datetime.

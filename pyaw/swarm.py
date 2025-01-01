@@ -210,9 +210,9 @@ class Swarm:
         self.df['eh_sc2'] = self.df['Ehy']
         if self.handle_outliers:
             print("self.df['eh_sc1'] set nan:")
-            self.df['eh_sc1'] = utils_preprocess.set_bursts_nan_std(self.df['eh_sc1'], std_times=std_times, print_=True)
+            self.df['eh_sc1'] = utils_preprocess.set_outliers_nan_std(self.df['eh_sc1'], std_times=std_times, print_=True)
             print("\nself.df['eh_sc2'] set nan:")
-            self.df['eh_sc2'] = utils_preprocess.set_bursts_nan_std(self.df['eh_sc2'], std_times=std_times, print_=True)
+            self.df['eh_sc2'] = utils_preprocess.set_outliers_nan_std(self.df['eh_sc2'], std_times=std_times, print_=True)
             print("\nfill nan value with linear, bfill, ffill in order")
             # 1
             # Identify NaN positions

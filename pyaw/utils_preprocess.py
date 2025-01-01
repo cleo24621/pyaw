@@ -11,7 +11,57 @@ import numpy as np
 import pandas as pd
 import pywt
 from matplotlib import pyplot as plt
+from scipy.interpolate import interpolate
 from scipy.signal import butter, filtfilt
+
+
+def get_3arrays(array):
+    """
+    :param array: like np.array([[a1,b1,c1],[a2,b2,c2],...]). like B_NEC column of the df_b get from MAGx_HR_1B file.
+    :return: 3 arrays. np.array([a1,a2,...]), np.array([b1,b2,...]), np.array([c1,c2,...]).
+    """
+    bn = []
+    be = []
+    bc = []
+    for ndarray_ in array:
+        bn.append(ndarray_[0])
+        be.append(ndarray_[1])
+        bc.append(ndarray_[2])
+    bn = np.array(bn)
+    be = np.array(be)
+    bc = np.array(bc)
+    return bn, be, bc
+
+def get_rotation_matrices_nec2sc_sc2nec(VsatN,VsatE):
+    """
+    :param VsatN: velocity of satellite in the north direction
+    :param VsatE: velocity of satellite in the east direction
+    :return: rotation_matrix_2d_nec2sc, rotation_matrix_2d_sc2nec
+    """
+    theta = np.arctan(VsatE / VsatN)
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
+    # Stack components to construct the rotation matrices
+    rotation_matrix = np.array([
+        [cos_theta, sin_theta],
+        [-sin_theta, cos_theta]
+    ])
+    # Transpose axes to create a (3, 2, 2) array
+    rotation_matrix_2d_nec2sc = np.transpose(rotation_matrix, (2, 0, 1))
+    rotation_matrix_2d_sc2nec = rotation_matrix_2d_nec2sc.transpose(0, 2, 1)
+    return rotation_matrix_2d_nec2sc, rotation_matrix_2d_sc2nec
+
+
+def do_rotation(coordinates1, coordinates2, rotation_matrix):
+    """
+    :param coordinates1: N of NEC or X of S/C
+    :param coordinates2: E of NEC or Y of S/C
+    :param rotation_matrix: one of the rotation matrices returned by get_rotation_matrices_nec2sc_sc2nec
+    :return: rotation of the coordinates
+    """
+    vectors12 = np.stack((coordinates1, coordinates2), axis=1)
+    vectors12_rotated = np.einsum('nij,nj->ni', rotation_matrix, vectors12)
+    return vectors12_rotated[:,0],vectors12_rotated[:,1]
 
 
 def set_bursts_nan_diff(series, threshold, print_: bool = True):
@@ -34,45 +84,60 @@ def set_bursts_nan_diff(series, threshold, print_: bool = True):
     return series_copy  # return series_copy  # series_scores = (series - series.mean()) / series.std()  # # 设置阈值，通常 Z 分数大于 3 或小于 -3 的点可以认为是异常点，超过的设置为nan  # threshold = 2  # print(series[np.abs(series_scores) > threshold])  # series[np.abs(series_scores) > threshold] = np.nan  # return series
 
 
-def set_bursts_nan_std(signal: pd.Series, std_times: float = 1.0, print_: bool = True):
+def set_outliers_nan_std(array, std_times: float = 1.0, print_: bool = True):
     """
-    :param signal:
-    :param threshold:
-    :param print_:
-    :return:
+    :param array: the array to process
+    :param std_times: standard deviation times
+    :param print_: print the outliers or not
+    :return: the array with outliers set to nan
     """
-    signal_copy = signal.copy()
-    threshold = std_times * signal_copy.std()
-    bursts = np.abs(signal_copy - signal_copy.mean()) > threshold
+    array_copy = array.copy()
+    threshold = std_times * np.std(array_copy)
+    bursts = np.abs(array_copy - np.mean(array_copy)) > threshold
     if print_:
-        print(len(signal_copy[bursts]))
-        print(signal_copy[bursts])
-    signal_copy[bursts] = np.nan
-    return signal_copy
+        print(len(array_copy[bursts]))
+        print(array_copy[bursts])
+    array_copy[bursts] = np.nan
+    return array_copy
 
 
-def move_average(series_: pd.Series, window: int, min_periods: int = 1, draw: bool = False,
-                 savefig: bool = False) -> pd.Series:
+def get_array_interpolated(x,y):
     """
-    :param series_:
-    :param window:
-    :param draw:
-    :param savefig:
+    :param x: ndarray consisting of np.datetime64.
+    :param y:
     :return:
     """
-    # series_mov_ave = series_.rolling(window=window).mean()
-    # series_mov_ave = series_.rolling(window=window, min_periods=min_periods,center=True).mean()
-    series_mov_ave = series_.rolling(window=window,center=True).mean()  # 'center=True' 得到的结果等于‘结果.mean()=0’
-    # figure: before and after moving average comparison
-    if draw:
-        plt.figure()
-        plt.plot(series_.index, series_)
-        plt.plot(series_mov_ave.index, series_mov_ave)
-        plt.xlabel('Time (UTC)')
-        if savefig:
-            plt.savefig(f'before and after moving average comparison')
-    return series_mov_ave
+    y_copy = y
+    # Mask for missing values
+    mask = np.isnan(y_copy)
+    # Interpolate
+    y_copy[mask] = interpolate.interp1d(x[~mask].astype('int'), y_copy[~mask], kind='linear')(
+        x[mask].astype('int'))  # note:: 当x是时间类型事，该方法也支持
+    return y_copy
 
+def move_average(array,window, center:bool=True,min_periods: int|None = None):
+    """
+    :param min_periods: the 'min_periods' parameter of the series.rolling() function
+    :param center: the 'center' parameter of the series.rolling() function
+    :param window: the window of the moving average. equal to fs * (the seconds of the window), and the windows must be an integer.
+    :param array: the array to process
+    :return:
+    """
+    assert type(window) == int, "window must be an integer"
+    # todo:: use the plot of the later part to verify the 'center', 'min_periods' parameters
+    array_series = pd.Series(array)
+    array_series_mov_ave = array_series.rolling(window=window, center=center,min_periods=min_periods).mean()  # 'center=True' 得到的结果等于‘结果.mean()=0’，即经过b-b.mean()（baselined）
+    return array_series_mov_ave.values
+
+def transform_time_string_to_datetime64ns(time_string):
+    """
+    :param time_string: str. like "20160311T064700".
+    :return: np.datetime64[ns]
+    """
+    # Insert delimiters to make it ISO 8601 compliant
+    formatted_string = time_string[:4] + "-" + time_string[4:6] + "-" + time_string[6:8] + "T" + time_string[9:11] + ":" + time_string[11:13] + ":" + time_string[13:]
+    # Convert to numpy.datetime64 with nanosecond precision
+    return np.datetime64(formatted_string, 'ns')
 
 def wavelet_smooth(series_: pd.Series, method='linear', wavelet='db4', level=6, threshold=0.2,
                    mode='soft') -> pd.Series:
@@ -91,6 +156,17 @@ def wavelet_smooth(series_: pd.Series, method='linear', wavelet='db4', level=6, 
 
 
 # todo: savgol_filter()
+
+def get_butter_filter(array,fs,lowcut,highcut,order):
+    nyquist = 0.5 * fs
+    low = lowcut / nyquist
+    high = highcut / nyquist
+    b, a = butter(order, [low, high], btype="band")
+    return filtfilt(b,a,array)
+
+
+
+
 
 class LHBFilter:
     def __init__(self, signal, fs, lowcut: Optional[float] = None, highcut: Optional[float] = None,

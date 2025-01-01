@@ -16,13 +16,14 @@ from pyaw import swarm, utils_preprocess
 
 
 class FFT:
-    def __init__(self, signal, fs):
-        self.signal = signal
+    def __init__(self, array: np.ndarray, fs):
+        """"""
+        self.array = array
         self.fs = fs
 
     def get_fft(self):
-        n = len(self.signal)
-        fft_values = np.fft.fft(self.signal.values)  # fft
+        n = len(self.array)
+        fft_values = np.fft.fft(self.array)  # fft
         amplitude_spectrum = np.abs(fft_values)  # magnitude of fft
         phase = np.angle(fft_values)  # phase of fft
         f_values = np.fft.fftfreq(n, d=1 / self.fs)  # frequencies
@@ -43,16 +44,17 @@ class FFT:
         return fig
 
 
+
 class PSD:
-    def __init__(self, signal, fs, nperseg: Optional[int] = None, noverlap: Optional[int] = None, window='hann'):
-        self.signal = signal
+    def __init__(self, array, fs, nperseg: Optional[int] = None, noverlap: Optional[int] = None, window='hann'):
+        self.array = array
         self.fs = fs
         self.nperseg = nperseg
         self.noverlap = noverlap
         self.window = window
 
     def get_psd(self):
-        freqs, Pxx = welch(self.signal.values, fs=self.fs, nperseg=self.nperseg, noverlap=self.noverlap,
+        freqs, Pxx = welch(self.array, fs=self.fs, nperseg=self.nperseg, noverlap=self.noverlap,
                            window=self.window)
         return freqs, Pxx
 
