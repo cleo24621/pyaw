@@ -349,23 +349,24 @@ class CWT:
 
 
 def main(fp1, fp2, start, end, compo='12'):
-    assert compo in ['12', '21']
-    df1 = swarm.pre_e(fp1, start, end, handle_outliers=True)
-    df2 = swarm.pre_b(fp2, start, end, handle_outliers=True)
-    df1['timestamp'] = df1.index.astype('int64')
-    df2['timestamp'] = df2.index.astype('int64')
-    if compo == '12':
-        e = df1['eh1_enu2']
-        b = df2['b1_enu1']
-    else:
-        e = df1['eh1_enu1']
-        b = df2['b1_enu2']
-    b = utils_preprocess.align_high2low(b, e)
-    cwt = CWT(e, b)
-    _ = cwt.plot_module()
-    _ = cwt.plot_phase()
-    _ = cwt.plot_phase_hist_counts()
-    return None
+    pass
+    # assert compo in ['12', '21']
+    # df1 = swarm.pre_e(fp1, start, end, handle_outliers=True)
+    # df2 = swarm.pre_b(fp2, start, end, handle_outliers=True)
+    # df1['timestamp'] = df1.index.astype('int64')
+    # df2['timestamp'] = df2.index.astype('int64')
+    # if compo == '12':
+    #     e = df1['eh1_enu2']
+    #     b = df2['b1_enu1']
+    # else:
+    #     e = df1['eh1_enu1']
+    #     b = df2['b1_enu2']
+    # b = utils_preprocess.align_high2low(b, e)
+    # cwt = CWT(e, b)
+    # _ = cwt.plot_module()
+    # _ = cwt.plot_phase()
+    # _ = cwt.plot_phase_hist_counts()
+    # return None
 
 
 if __name__ == '__main__':

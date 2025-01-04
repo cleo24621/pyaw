@@ -240,10 +240,8 @@ class Swarm:
         self.df['eh_enu2'] = self.df['eh_sc1'] * np.cos(theta) - self.df['eh_sc2'] * np.sin(theta)
         if if_mv:
             print("\nget background electric field and disturb electric field using moving average:")
-            self.df['eh0_enu1'] = utils_preprocess.move_average(self.df['eh_enu1'], window=int(16 * window_sec),
-                                                                draw=False)
-            self.df['eh0_enu2'] = utils_preprocess.move_average(self.df['eh_enu2'], window=int(16 * window_sec),
-                                                                draw=False)
+            self.df['eh0_enu1'] = utils_preprocess.move_average(self.df['eh_enu1'], window=int(16 * window_sec))
+            self.df['eh0_enu2'] = utils_preprocess.move_average(self.df['eh_enu2'], window=int(16 * window_sec))
             self.df['eh1_enu1'] = self.df['eh_enu1'] - self.df['eh0_enu1']
             self.df['eh1_enu2'] = self.df['eh_enu2'] - self.df['eh0_enu2']
             print("complete get")
@@ -278,10 +276,8 @@ class Swarm:
                                                                      print_=True)  # todo: add interpolate nan section
         if if_mv:
             print("\nget background magnetic field and disturb magnetic field using moving average:")
-            self.df['b0_enu1'] = utils_preprocess.move_average(self.df['b_enu1'], window=int(50 * window_sec),
-                                                               draw=False)
-            self.df['b0_enu2'] = utils_preprocess.move_average(self.df['b_enu2'], window=int(50 * window_sec),
-                                                               draw=False)
+            self.df['b0_enu1'] = utils_preprocess.move_average(self.df['b_enu1'], window=int(50 * window_sec))
+            self.df['b0_enu2'] = utils_preprocess.move_average(self.df['b_enu2'], window=int(50 * window_sec))
             self.df['b1_enu1'] = self.df['b_enu1'] - self.df['b0_enu1']
             self.df['b1_enu2'] = self.df['b_enu2'] - self.df['b0_enu2']
             print("complete get")
@@ -404,10 +400,10 @@ def figure_ratio(signal1, signal2, fs, figsize=(5, 5)):
     return None
 
 
-def figure_phase(signal1, signal2, figsize=(10, 5)):
-    cwt = utils_spectral.CWT(signal1, signal2)
-    cwt.plot_phase_hist_counts(figsize=figsize)
-    return None
+# def figure_phase(signal1, signal2, figsize=(10, 5)):
+#     cwt = utils_spectral.CWT(signal1, signal2)
+#     cwt.plot_phase_hist_counts(figsize=figsize)
+#     return None
 
 
 def main():

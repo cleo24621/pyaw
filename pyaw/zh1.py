@@ -334,32 +334,33 @@ class EFDSCMClip:
 
 
 def main():
-    fp_efd = r"\\Diskstation1\file_three\aw\zh1\efd\ulf\201911\CSES_01_EFD_1_L02_A1_096790_20191031_233350_20191101_000824_000.h5"
-    fp_scm = r"\\Diskstation1\file_three\aw\zh1\scm\ulf\201911\CSES_01_SCM_1_L02_A2_096790_20191031_233256_20191101_000821_000.h5"
-    start = pd.Timestamp('2019-10-31 23:34:08.0')
-    end = pd.Timestamp('2019-10-31 23:34:28.0')  # according to ratio fields 'df1c_efd' and 'df1c_scm'
-    efdscmclip = EFDSCMClip(start, end, fp_efd, fp_scm)
-    e_psd = utils_spectral.PSD(efdscmclip.data_preprocessed['e1_enu1'], efdscmclip.target_fs)
-    freqs_e, Pxx_e = e_psd.get_psd()
-    b_psd = utils_spectral.PSD(efdscmclip.data_preprocessed['b1_enu2'], efdscmclip.target_fs)
-    freqs_b, Pxx_b = b_psd.get_psd()
-    plt.figure(1)
-    plt.plot(freqs_e, np.sqrt(Pxx_e), color='r', label='e1_enu1')
-    plt.plot(freqs_b, np.sqrt(Pxx_b), color='b', label='b1_enu2')
-    plt.xlim([1, 16])
-    plt.legend()
-    plt.yscale('log')
-    plt.show()
-    plt.figure(2)
-    assert all(freqs_e == freqs_b), "freqs of e and b should be equal"
-    plt.plot(freqs_e, np.sqrt(Pxx_e / Pxx_b) * 1e6)
-    plt.xlim([1, 16])
-    plt.yscale('log')
-    plt.show()
-    cwt_ = utils_spectral.CWT(efdscmclip.data_preprocessed['e1_enu1'], efdscmclip.data_preprocessed['b1_enu2'],
-                              sampling_period=1 / 32)
-    cwt_.plot_module()  # cwt_.plot_phase()  # cwt_.plot_phase_hist_counts()
-    cwt_.plot_phase_hist_counts()
+    pass
+    # fp_efd = r"\\Diskstation1\file_three\aw\zh1\efd\ulf\201911\CSES_01_EFD_1_L02_A1_096790_20191031_233350_20191101_000824_000.h5"
+    # fp_scm = r"\\Diskstation1\file_three\aw\zh1\scm\ulf\201911\CSES_01_SCM_1_L02_A2_096790_20191031_233256_20191101_000821_000.h5"
+    # start = pd.Timestamp('2019-10-31 23:34:08.0')
+    # end = pd.Timestamp('2019-10-31 23:34:28.0')  # according to ratio fields 'df1c_efd' and 'df1c_scm'
+    # efdscmclip = EFDSCMClip(start, end, fp_efd, fp_scm)
+    # e_psd = utils_spectral.PSD(efdscmclip.data_preprocessed['e1_enu1'], efdscmclip.target_fs)
+    # freqs_e, Pxx_e = e_psd.get_psd()
+    # b_psd = utils_spectral.PSD(efdscmclip.data_preprocessed['b1_enu2'], efdscmclip.target_fs)
+    # freqs_b, Pxx_b = b_psd.get_psd()
+    # plt.figure(1)
+    # plt.plot(freqs_e, np.sqrt(Pxx_e), color='r', label='e1_enu1')
+    # plt.plot(freqs_b, np.sqrt(Pxx_b), color='b', label='b1_enu2')
+    # plt.xlim([1, 16])
+    # plt.legend()
+    # plt.yscale('log')
+    # plt.show()
+    # plt.figure(2)
+    # assert all(freqs_e == freqs_b), "freqs of e and b should be equal"
+    # plt.plot(freqs_e, np.sqrt(Pxx_e / Pxx_b) * 1e6)
+    # plt.xlim([1, 16])
+    # plt.yscale('log')
+    # plt.show()
+    # cwt_ = utils_spectral.CWT(efdscmclip.data_preprocessed['e1_enu1'], efdscmclip.data_preprocessed['b1_enu2'],
+    #                           sampling_period=1 / 32)  # todo:: use new CWT class in new utils.py file
+    # cwt_.plot_module()  # cwt_.plot_phase()  # cwt_.plot_phase_hist_counts()
+    # cwt_.plot_phase_hist_counts()
 
 
 if __name__ == '__main__':
