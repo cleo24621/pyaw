@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 from viresclient import SwarmRequest
 
-from pyaw import utils_preprocess, utils_spectral
+from pyaw import utils, utils_spectral
 
 
 def is_valid_datetime_format(date_string):
@@ -148,6 +148,9 @@ def get_time_strs_forB(start: str, num_elements: int) -> list:
     """
     start = pd.to_datetime(start, format='%Y%m%dT%H%M%S')
     return [(start + timedelta(hours=i)).strftime("%Y%m%dT%H%M%S") for i in range(num_elements + 1)]
+
+
+def
 
 
 class Swarm:

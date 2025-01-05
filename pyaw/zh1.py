@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from pymap3d import ecef
 from scipy import interpolate
 
-from pyaw import configs, utils_preprocess, utils_spectral
+from pyaw import configs, utils, utils_spectral
 
 
 class ZH1:

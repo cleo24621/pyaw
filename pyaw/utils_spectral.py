@@ -12,36 +12,9 @@ from matplotlib import pyplot as plt
 from matplotlib.pyplot import figure
 from scipy.signal import welch, spectrogram, stft, correlate, coherence, csd
 
-from pyaw import swarm, utils_preprocess
+from pyaw import swarm, utils
 
 
-class FFT:
-    def __init__(self, array: np.ndarray, fs):
-        """"""
-        self.array = array
-        self.fs = fs
-
-    def get_fft(self):
-        n = len(self.array)
-        fft_values = np.fft.fft(self.array)  # fft
-        amplitude_spectrum = np.abs(fft_values)  # magnitude of fft
-        phase = np.angle(fft_values)  # phase of fft
-        f_values = np.fft.fftfreq(n, d=1 / self.fs)  # frequencies
-        # only positive frequencies
-        return f_values[:n // 2], amplitude_spectrum[:n // 2], phase[:n // 2]
-
-    def plot_fft(self, figsize=(10, 6), title='fft'):
-        freqs, amps, _ = self.get_fft()
-        fig = plt.figure(figsize=figsize)
-        plt.plot(freqs, amps, color='red')
-        plt.xscale('linear')
-        plt.yscale('log')
-        plt.xlabel('Frequency (Hz)')
-        plt.ylabel('Amplitude Spectra')
-        plt.grid(which='both', linestyle='--', linewidth=0.5)
-        plt.title(f'{title}: (fs={self.fs})')
-        plt.show()
-        return fig
 
 
 

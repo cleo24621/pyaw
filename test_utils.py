@@ -4,7 +4,7 @@ import pandas as pd
 import pywt
 from matplotlib import pyplot as plt
 
-import utils_preprocess
+import utils
 
 
 def test_align_high2low():
@@ -15,7 +15,7 @@ def test_align_high2low():
     df_b = pd.read_pickle(Path(sdir) / Path(sfn_MAGA_HR_1B))
     timestamps_e = df_e.index.values
     timestamps_b = df_b.index.values
-    bn, be, bc = utils_preprocess.get_3arrays(df_b['B_NEC'].values)
+    bn, be, bc = utils_preprocess.get_3arrs(df_b['B_NEC'].values)
     be_align_e = utils_preprocess.align_high2low(be, timestamps_b, timestamps_e)
     plt.plot(timestamps_b, be)
     plt.plot(timestamps_e, be_align_e)
