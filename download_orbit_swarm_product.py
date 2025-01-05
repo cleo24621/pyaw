@@ -67,15 +67,18 @@ def download_orbit_collection(request,spacecraft,orbit_number,collection):
     下载单轨数据产品，并保存到指定路径
     :return:
     """
-    download_st = time.time()
     st,et = request.get_times_for_orbits(orbit_number, orbit_number, spacecraft=spacecraft, mission='Swarm')
-    data = request.get_between(st,et)
-    df = data.as_dataframe()
-    sdir = Path(f"./data/vires/{collection}")
+    sdir = Path(f"V:/aw/swarm/vires/{collection}")
     sfn = Path(f"{collection}_{orbit_number}_{st.strftime('%Y%m%dT%H%M%S')}_{et.strftime('%Y%m%dT%H%M%S')}.pkl")
     if not sdir.exists():
         sdir.mkdir(parents=True, exist_ok=True)
         print(f"目录已创建: {sdir}")
+    if Path(sdir/sfn).exists():
+        print(f"文件已存在，跳过下载: {Path(sdir/sfn)}")
+        return
+    download_st = time.time()
+    data = request.get_between(st,et)
+    df = data.as_dataframe()
     df.to_pickle(sdir/sfn)
     download_et = time.time()
     # 记录下载信息
