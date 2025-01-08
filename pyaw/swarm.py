@@ -1,16 +1,9 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-@File        : swarm.py
-@Author      : cleo
-@Date        : 2024/9/23 9:55
-@Project     : PyWave
-@Description : 描述此文件的功能和用途。
-
-@Copyright   : Copyright (c) 2024, cleo
-@License     : 使用的许可证（如 MIT, GPL）
-@Last Modified By : cleo
-@Last Modified Date: 2024/9/23 9:55
-"""
+#
+# @Author : cleo
+# @Project : pywave
+# @Description : the parameters, functions and classes related to swarm project in pywave project.
 
 import os
 from datetime import timedelta, datetime
@@ -23,6 +16,12 @@ import pandas as pd
 from viresclient import SwarmRequest
 
 from pyaw import utils, utils_spectral
+
+# parameters
+# collections
+collections = {'TCT16':['SW_EXPT_EFIA_TCT16','SW_EXPT_EFIB_TCT16','SW_EXPT_EFIC_TCT16'],
+               'MAG_HR_1B':['SW_OPER_MAGA_HR_1B','SW_OPER_MAGB_HR_1B','SW_OPER_MAGC_HR_1B']}
+
 
 
 def is_valid_datetime_format(date_string):
@@ -150,7 +149,6 @@ def get_time_strs_forB(start: str, num_elements: int) -> list:
     return [(start + timedelta(hours=i)).strftime("%Y%m%dT%H%M%S") for i in range(num_elements + 1)]
 
 
-def
 
 
 class Swarm:
@@ -213,9 +211,9 @@ class Swarm:
         self.df['eh_sc2'] = self.df['Ehy']
         if self.handle_outliers:
             print("self.df['eh_sc1'] set nan:")
-            self.df['eh_sc1'] = utils_preprocess.set_outliers_nan_std(self.df['eh_sc1'], std_times=std_times, print_=True)
+            self.df['eh_sc1'] = utils.set_outliers_nan_std(self.df['eh_sc1'], std_times=std_times, print_=True)
             print("\nself.df['eh_sc2'] set nan:")
-            self.df['eh_sc2'] = utils_preprocess.set_outliers_nan_std(self.df['eh_sc2'], std_times=std_times, print_=True)
+            self.df['eh_sc2'] = utils.set_outliers_nan_std(self.df['eh_sc2'], std_times=std_times, print_=True)
             print("\nfill nan value with linear, bfill, ffill in order")
             # 1
             # Identify NaN positions
@@ -243,8 +241,8 @@ class Swarm:
         self.df['eh_enu2'] = self.df['eh_sc1'] * np.cos(theta) - self.df['eh_sc2'] * np.sin(theta)
         if if_mv:
             print("\nget background electric field and disturb electric field using moving average:")
-            self.df['eh0_enu1'] = utils_preprocess.move_average(self.df['eh_enu1'], window=int(16 * window_sec))
-            self.df['eh0_enu2'] = utils_preprocess.move_average(self.df['eh_enu2'], window=int(16 * window_sec))
+            self.df['eh0_enu1'] = utils.move_average(self.df['eh_enu1'], window=int(16 * window_sec))
+            self.df['eh0_enu2'] = utils.move_average(self.df['eh_enu2'], window=int(16 * window_sec))
             self.df['eh1_enu1'] = self.df['eh_enu1'] - self.df['eh0_enu1']
             self.df['eh1_enu2'] = self.df['eh_enu2'] - self.df['eh0_enu2']
             print("complete get")
@@ -272,15 +270,15 @@ class Swarm:
         self.df['b_enu3'] = b_enu3
         if self.handle_outliers:
             print("self.df['b_enu1'] set nan:")
-            self.df['b_enu1'] = utils_preprocess.set_bursts_nan_diff(self.df['b_enu1'], threshold=threshold,
+            self.df['b_enu1'] = utils.set_bursts_nan_diff(self.df['b_enu1'], threshold=threshold,
                                                                      print_=True)
             print("\nself.df['b_enu2'] set nan:")
-            self.df['b_enu2'] = utils_preprocess.set_bursts_nan_diff(self.df['b_enu2'], threshold=threshold,
+            self.df['b_enu2'] = utils.set_bursts_nan_diff(self.df['b_enu2'], threshold=threshold,
                                                                      print_=True)  # todo: add interpolate nan section
         if if_mv:
             print("\nget background magnetic field and disturb magnetic field using moving average:")
-            self.df['b0_enu1'] = utils_preprocess.move_average(self.df['b_enu1'], window=int(50 * window_sec))
-            self.df['b0_enu2'] = utils_preprocess.move_average(self.df['b_enu2'], window=int(50 * window_sec))
+            self.df['b0_enu1'] = utils.move_average(self.df['b_enu1'], window=int(50 * window_sec))
+            self.df['b0_enu2'] = utils.move_average(self.df['b_enu2'], window=int(50 * window_sec))
             self.df['b1_enu1'] = self.df['b_enu1'] - self.df['b0_enu1']
             self.df['b1_enu2'] = self.df['b_enu2'] - self.df['b0_enu2']
             print("complete get")
@@ -321,8 +319,8 @@ def figure_baselined(signal1: pd.Series, signal2: pd.Series, label1='e (mV/m)', 
 
 def figure_filter(signal1: pd.Series, signal2: pd.Series, lowcut=0.2, highcut=4.0, label1='e (mV/m)', label2='b (nT)',
                   figsize=(10, 4), ylabel='e and b filtered (0.2-4 Hz)'):
-    band_filter_1 = utils_preprocess.LHBFilter(signal1, fs=16, lowcut=lowcut, highcut=highcut)
-    band_filter_2 = utils_preprocess.LHBFilter(signal2, fs=50, lowcut=lowcut, highcut=highcut)
+    band_filter_1 = utils.LHBFilter(signal1, fs=16, lowcut=lowcut, highcut=highcut)
+    band_filter_2 = utils.LHBFilter(signal2, fs=50, lowcut=lowcut, highcut=highcut)
     signal1 = pd.Series(index=signal1.index, data=band_filter_1.apply_filter())
     signal2 = pd.Series(index=signal2.index, data=band_filter_2.apply_filter())
     x1 = signal1.index

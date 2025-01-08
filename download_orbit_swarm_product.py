@@ -1,4 +1,5 @@
 import os
+import pickle
 import time
 from pathlib import Path
 
@@ -69,7 +70,9 @@ def download_orbit_collection(request,spacecraft,orbit_number,collection):
     """
     st,et = request.get_times_for_orbits(orbit_number, orbit_number, spacecraft=spacecraft, mission='Swarm')
     sdir = Path(f"V:/aw/swarm/vires/{collection}")
-    sfn = Path(f"{collection}_{orbit_number}_{st.strftime('%Y%m%dT%H%M%S')}_{et.strftime('%Y%m%dT%H%M%S')}.pkl")
+    sdir = Path(f"V:/aw/swarm/vires/aux/{collection}")
+    # sfn = Path(f"{collection}_{orbit_number}_{st.strftime('%Y%m%dT%H%M%S')}_{et.strftime('%Y%m%dT%H%M%S')}.pkl")
+    sfn = Path(f"aux_{collection}_{orbit_number}_{st.strftime('%Y%m%dT%H%M%S')}_{et.strftime('%Y%m%dT%H%M%S')}.pkl")
     if not sdir.exists():
         sdir.mkdir(parents=True, exist_ok=True)
         print(f"目录已创建: {sdir}")
@@ -92,27 +95,41 @@ def download_orbit_collection(request,spacecraft,orbit_number,collection):
 
 # 要循环的列表
 request = SwarmRequest()
-orbit_number_st_et = {'A':(request.get_orbit_number('A', '20160101T000000', mission='Swarm'),
-                           request.get_orbit_number('A','20170101T000000',mission='Swarm')),
-                'B': (request.get_orbit_number('B', '20160101T000000', mission='Swarm'),
-                      request.get_orbit_number('B', '20170101T000000', mission='Swarm')),
-                'C': (request.get_orbit_number('C', '20160101T000000', mission='Swarm'),
-                      request.get_orbit_number('C', '20170101T000000', mission='Swarm')),
-                      }
+# 保存为pkl文件，不重复获取
+# orbit_number_s_e = {'A':(request.get_orbit_number('A', '20160101T000000', mission='Swarm'),
+#                          request.get_orbit_number('A','20170101T000000',mission='Swarm')),
+#                 'B': (request.get_orbit_number('B', '20160101T000000', mission='Swarm'),
+#                       request.get_orbit_number('B', '20170101T000000', mission='Swarm')),
+#                 'C': (request.get_orbit_number('C', '20160101T000000', mission='Swarm'),
+#                       request.get_orbit_number('C', '20170101T000000', mission='Swarm')),
+#                     }
+# # 保存字典到文件
+# with open("./data/vires/orbit_number_s_e_2016.pkl", "wb") as f:
+#     pickle.dump(orbit_number_s_e, f)
+# 加载pkl文件
+with open("./data/vires/orbit_number_s_e_2016.pkl", "rb") as f:
+    orbit_number_s_e = pickle.load(f)
+
 collections_dic = {'TCT16':["SW_EXPT_EFIA_TCT16", "SW_EXPT_EFIB_TCT16", "SW_EXPT_EFIC_TCT16"],
                'MAG_HR':["SW_OPER_MAGA_HR_1B","SW_OPER_MAGB_HR_1B","SW_OPER_MAGC_HR_1B"],
+               'MAG_LR':["SW_OPER_MAGA_LR_1B","SW_OPER_MAGB_LR_1B","SW_OPER_MAGC_LR_1B"],
                'LP_1B':["SW_OPER_EFIA_LP_1B","SW_OPER_EFIB_LP_1B","SW_OPER_EFIC_LP_1B"]}
+collections_dic_tempo = {'MAG_HR':["SW_OPER_MAGA_HR_1B","SW_OPER_MAGB_HR_1B","SW_OPER_MAGC_HR_1B"]}
 
-for collection_key,collection_value_ls in collections_dic.items():
+# for collection_key,collection_value_ls in collections_dic.items():
+for collection_key,collection_value_ls in collections_dic_tempo.items():
+    # if collection_key == 'TCT16':·
+    #     continue
     print(collection_key)
     print(collection_value_ls)
-    for collection,(spacecraft, orbit_number_st_et_value) in zip(collection_value_ls, orbit_number_st_et.items()):
+    for collection,(spacecraft, orbit_number_st_et_value) in zip(collection_value_ls, orbit_number_s_e.items()):
         print(collection)
         print(spacecraft)
         print(orbit_number_st_et_value)
         request.set_collection(collection)
-        measurements = request.available_measurements(collection)
-        request.set_products(measurements=measurements)
+        # measurements = request.available_measurements(collection)
+        # request.set_products(measurements=measurements)
+        request.set_products(auxiliaries=['AscendingNodeLongitude','QDLat', 'QDLon','QDBasis', 'MLT','SunDeclination'])
         for orbit_number in range(orbit_number_st_et_value[0],orbit_number_st_et_value[1]+1):
             print(orbit_number)
             try:
@@ -126,8 +143,17 @@ for collection_key,collection_value_ls in collections_dic.items():
                 logging.error(f"Error occurred while downloading orbit collection: {e}", exc_info=True)
 
 
-
-
+# def geomagnetic_coordinates():
+#     """
+#     下载MAGx_HR相应的地磁坐标
+#     :param request:
+#     :return:
+#     """
+#     collections = ["SW_OPER_MAGA_HR_1B", "SW_OPER_MAGB_HR_1B", "SW_OPER_MAGC_HR_1B"]
+#     for collection in collections:
+#
+#
+# geomagnetic_coordinates()
 
 # 一轨数据下载
 # 极光带 普遍现象？ Wu 2020研究结论 是普遍现象

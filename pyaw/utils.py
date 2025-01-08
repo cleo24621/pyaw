@@ -119,6 +119,7 @@ def set_outliers_nan_std(array: np.ndarray, std_times: float = 1.0, print_: bool
 
 def get_array_interpolated(x, y):
     """
+    interpolate the missing values of the array using 1d interpolation
     :param x: ndarray consisting of np.datetime64.
     :param y: the array to process
     :return:the array with missing values interpolated
@@ -128,7 +129,7 @@ def get_array_interpolated(x, y):
     mask = np.isnan(y_copy)
     # Interpolate
     y_copy[mask] = interpolate.interp1d(x[~mask].astype('int'), y_copy[~mask], kind='linear')(
-        x[mask].astype('int'))  # note:: 当x是时间类型事，该方法也支持
+        x[mask].astype('int'))  # note:: 当x是时间类型时，该方法也支持
     return y_copy
 
 
@@ -238,7 +239,7 @@ def normalize_to_01(arr: np.ndarray) -> np.ndarray:
     return normalized_data
 
 
-def get_phase_hist_counts(freqs: np.ndarray, phase_diffs: np.ndarray, num_bins: int):
+def get_phase_histogram2d(freqs: np.ndarray, phase_diffs: np.ndarray, num_bins: int):
     """
     :param freqs: 1d
     :param phase_diffs: 2d
@@ -253,7 +254,7 @@ def get_phase_hist_counts(freqs: np.ndarray, phase_diffs: np.ndarray, num_bins: 
     return phase_bins, hist_counts
 
 
-def get_ratio_hist_counts(freqs: np.ndarray, ratio_bins: np.ndarray, bins: np.ndarray):
+def get_ratio_histogram2d(freqs: np.ndarray, ratio_bins: np.ndarray, bins: np.ndarray):
     """
     :param freqs: 1d
     :param ratio_bins: 2d. different from phase_bins that is in [-180, 180], ratio_bins is in [0, max(ratio)] or [0,percentile95(ratio)].
