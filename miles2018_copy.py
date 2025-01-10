@@ -25,16 +25,10 @@ df_b_aux = pd.read_pickle(fps[1])
 df_e = pd.read_pickle(fps[2])
 
 #%% 选取列，选取时间范围
-# st_clip = '20160311T064640'
-# et_clip = '20160311T064920'
-st_clip = '20140219T023040'
-et_clip = '20140219T024120'
-df_b_clip = df_b[['B_NEC','Longitude','Latitude','Radius']]
-df_b_clip = df_b_clip.loc[pd.Timestamp(st_clip):pd.Timestamp(et_clip)]
-# st = '20160311T064700'
-# et = '20160311T064900'
 st = '20140219T023100'
 et = '20140219T024100'
+df_b_clip = df_b[['B_NEC','Longitude','Latitude','Radius']]
+df_b_clip = df_b_clip.loc[pd.Timestamp(st):pd.Timestamp(et)]
 df_b_aux_clip = df_b_aux[['QDLat','QDLon','MLT']]
 df_b_aux_clip = df_b_aux_clip.loc[pd.Timestamp(st):pd.Timestamp(et)]
 df_e_clip = df_e[['Longitude','Latitude','Radius','VsatE','VsatN','Ehy','Ehx']]
@@ -54,13 +48,8 @@ ehn, ehe = utils.do_rotation(-ehx, -ehy,rotation_matrix_2d_sc2nec)
 
 #%% 滑动平均
 import numpy as np
-# fs_e = 16
 fs_b = 50
 mv_window_seconds = 20  # int
-
-# window_e = fs_e * mv_window_seconds
-# ehn_mv = utils.move_average(ehn, window_e)
-# ehn1 = ehn - ehn_mv
 
 window_b = fs_b * mv_window_seconds
 _,be,_ = utils.get_3arrs(df_b_clip['B_NEC'])
@@ -70,61 +59,48 @@ be1 = be - be_mv
 datetimes_e = df_e_clip.index.values
 datetimes_b = df_b_clip.index.values
 
-# mask_e = np.where((datetimes_e >= utils.convert_tstr2dt64(st)) & (datetimes_e <= utils.convert_tstr2dt64(et)))
-mask_b = np.where((datetimes_b >= utils.convert_tstr2dt64(st)) & (datetimes_b <= utils.convert_tstr2dt64(et)))
-# datetimes_e = datetimes_e[mask_e]
-datetimes_b = datetimes_b[mask_b]
-# ehn1 = ehn1[mask_e]
-be1 = be1[mask_b]
+be1 = utils.align_high2low(be1,datetimes_b,datetimes_e)
 
 #%% 谱分析
 from scipy.signal import stft
 
-fs_e = 16
+fs = 16
 window = 'hann'
 stft_window_seconds = 4  # second
-nperseg_e = int(stft_window_seconds * fs_e)  # 每个窗的采样点数
-noverlap_e = nperseg_e // 2  # 50%重叠
-nperseg_b = int(stft_window_seconds * fs_b)
-noverlap_b = nperseg_b // 2
+nperseg = int(stft_window_seconds * fs)  # 每个窗的采样点数
+noverlap = nperseg // 2  # 50%重叠
 
 # get stft
-f_e, t_e, Zxx_e = stft(ehn, fs_e, window=window, nperseg=nperseg_e, noverlap=noverlap_e,
-                       scaling='psd')
-f_b, t_b, Zxx_b = stft(be1, fs_b, window=window, nperseg=nperseg_b, noverlap=noverlap_b,
+freqs, ts, Zxx_e = stft(ehn, fs, window=window, nperseg=nperseg, noverlap=noverlap,
+                        scaling='psd')
+_, _, Zxx_b = stft(be1, fs, window=window, nperseg=nperseg, noverlap=noverlap,
                        scaling='psd')
 
-t_e_dt64 = datetimes_e[0] + [np.timedelta64(int(_), 's') for _ in t_e]
-t_b_dt64 = datetimes_b[0] + [np.timedelta64(int(_), 's') for _ in t_b]
+ts_dt64 = datetimes_e[0] + [np.timedelta64(int(_), 's') for _ in ts]
 
 #%% 绘制谱 e
 import matplotlib.pyplot as plt
 
 Zxx_e_m = np.abs(Zxx_e)
-plt.pcolormesh(t_e_dt64, f_e, np.log10(Zxx_e_m), shading='gouraud')  # 可以用初始值也可以用log10
+plt.pcolormesh(ts_dt64, freqs, np.log10(Zxx_e_m), shading='gouraud')  # 可以用初始值也可以用log10
 plt.colorbar()
 plt.xticks(rotation=45)
 plt.show()
 
 #%% 绘制谱 b
 Zxx_b_m = np.abs(Zxx_b)
-plt.pcolormesh(t_b_dt64, f_b, np.log10(Zxx_b_m), shading='gouraud')
+plt.pcolormesh(ts_dt64, freqs, np.log10(Zxx_b_m), shading='gouraud')
 plt.colorbar()
 plt.ylim([0, 8])
 plt.xticks(rotation=45)
 plt.show()
 
 #%% 交叉谱
-mask_f_b = np.where(f_b <= 8.0)
-f_b_mask = f_b[mask_f_b]
-assert np.all(np.equal(f_b_mask, f_e))
-Zxx_b_mask = Zxx_b[mask_f_b]
-assert Zxx_b_mask.shape == Zxx_e.shape
-cross_e_b_spectral_density = Zxx_e * np.conj(Zxx_b_mask)
+cross_e_b_spectral_density = Zxx_e * np.conj(Zxx_b)
 
 #%% plot
 cross_e_b_spectral_density_module = np.abs(cross_e_b_spectral_density)
-plt.pcolormesh(t_e_dt64, f_e, np.log10(cross_e_b_spectral_density_module), shading='gouraud')
+plt.pcolormesh(ts_dt64, freqs, np.log10(cross_e_b_spectral_density_module), shading='gouraud')
 plt.xticks(rotation=45)
 plt.colorbar()
 plt.show()
@@ -134,19 +110,19 @@ cross_e_b_spectral_density_module_modified = cross_e_b_spectral_density_module.c
 modify_per99 = np.percentile(cross_e_b_spectral_density_module_modified,99)
 cross_e_b_spectral_density_module_modified[cross_e_b_spectral_density_module_modified>modify_per99] = modify_per99
 
-plt.pcolormesh(t_e_dt64, f_e, cross_e_b_spectral_density_module_modified, shading='gouraud')
+plt.pcolormesh(ts_dt64, freqs, cross_e_b_spectral_density_module_modified, shading='gouraud')
 plt.xticks(rotation=45)
 plt.colorbar()
 plt.show()
 
 #%% cross mean
 plt.figure()
-plt.plot(t_e_dt64,cross_e_b_spectral_density_module.mean(axis=0))
+plt.plot(ts_dt64, cross_e_b_spectral_density_module.mean(axis=0))
 plt.xticks(rotation=45)
 plt.show()
 
 #%% coherence
-def split_array(data,step=1):
+def split_array(data,step=11):
     # Split the array
     result = [data[:, i:i + step] for i in range(0, data.shape[1] - step, step)]
     # Add the remaining columns to the last segment
@@ -167,7 +143,7 @@ def split_array(data,step=1):
 #%% compute
 cross_e_b_spectral_density_split = split_array(cross_e_b_spectral_density)  # ls
 denominator1ls = split_array(np.abs(Zxx_e ** 2))
-denominator2ls = split_array(np.abs(Zxx_b_mask ** 2))
+denominator2ls = split_array(np.abs(Zxx_b ** 2))
 
 coherences_f = []
 for i in range(len(cross_e_b_spectral_density_split)):
@@ -188,6 +164,26 @@ plt.plot(coherences)
 plt.axhline(0.5)
 plt.show()
 
+
+#%%
+S_By_Ex_split_spec = split_array(cross_e_b_spectral_density)
+nominator1ls = split_array(np.abs(Zxx_e ** 2))
+nominator2ls = split_array(np.abs(Zxx_b ** 2))
+coherences_spec = []
+for i in range(len(S_By_Ex_split_spec)):
+    denominator = sum(S_By_Ex_split_spec[i]) / len(S_By_Ex_split_spec[i])
+    nominator = np.sqrt(sum(nominator1ls[i]) / len(nominator1ls[i])) * np.sqrt(sum(nominator2ls[i]) / len(nominator2ls[i]))
+    print("denominator:",denominator)
+    print("nominator:",nominator)
+    print("denominator/nominator",denominator/nominator)
+    print("coherency:",sum(np.abs(denominator / nominator)) / len(np.abs(denominator / nominator)))
+    print("----------------------------------------")
+    coherences_spec.append(sum(np.abs(denominator / nominator)) / len(np.abs(denominator / nominator)))
+
+plt.figure()
+plt.plot(coherences_spec)
+plt.axhline(0.5)
+plt.show()
 
 #%% 比值
 #%% histgram2d
