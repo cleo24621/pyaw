@@ -278,6 +278,58 @@ def align_high2low(arr_high: np.ndarray, arr_high_index: np.ndarray, arr_low_ind
     interp_func = interp1d(arr_high_index.astype('int64'), arr_high, kind='linear', fill_value="extrapolate")
     return interp_func(arr_low_index.astype('int64'))
 
+def split_array(data, step=11):  # todo:: step
+    if len(data.shape) > 2:
+        raise "Cannot handle arrays of shapes with a length greater than 2"
+    if len(data.shape) == 1:
+        # Split the array
+        step = 11
+        result = [data[i:i + step] for i in range(0, len(data) - step, step)]
+        # Add the remaining columns to the last segment
+        remainder = data[step * len(result):]
+        if remainder.size > 0:
+            if len(result) > 0:
+                # Append remaining columns to the last split
+                result[-1] = np.hstack((result[-1], remainder))
+            else:
+                # If there's no initial split, the remainder is the only result
+                result.append(remainder)
+    else:
+        result = [data[:, i:i + step] for i in range(0, data.shape[1] - step, step)]  # todo:: 更少的组成一部分；时间对应
+        remainder = data[:, step * len(result):]
+        if remainder.size > 0:
+            if len(result) > 0:
+                result[-1] = np.hstack((result[-1], remainder))
+            else:
+                result.append(remainder)
+    return result
+
+
+def get_coherences(Zxx1,Zxx2,cpsd_12) -> np.ndarray:
+    """
+    the times and freqs corresponding to Zxx1 and Zxx2 should be the same.
+    Zxx1 can be Zxx_e or Zxx_b, the order doesn't affect the result.
+    :param Zxx1:
+    :param Zxx2:
+    :param cpsd_12:
+    :return:
+    """
+    cpsd12_split = split_array(cpsd_12)  # ls
+    denominator1ls = split_array(np.abs(Zxx1 ** 2))
+    denominator2ls = split_array(np.abs(Zxx2 ** 2))
+
+    coherences_f = []
+    for i in range(len(cpsd12_split)):
+        nominator = cpsd12_split[i].mean(axis=1)  # along axis1, not all elements.
+        denominator = np.sqrt(denominator1ls[i].mean(axis=1)) * np.sqrt(denominator2ls[i].mean(axis=1))
+        coherences_f.append(nominator / denominator)
+
+    coherences = []
+    for c_f in coherences_f:
+        coherences.append(np.abs(c_f).mean())
+
+    return np.array(coherences)
+
 
 class FFT:
     """

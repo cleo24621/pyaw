@@ -149,6 +149,41 @@ def get_time_strs_forB(start: str, num_elements: int) -> list:
     return [(start + timedelta(hours=i)).strftime("%Y%m%dT%H%M%S") for i in range(num_elements + 1)]
 
 
+def quaternion_multiply(p, q):
+    """
+    quaternion using in swarm 1b product algorithm. it is a little different from the general definition of quaternion.
+    Define quaternion multiplication.
+    :param p: np.array([p1,p2,p3,p4])
+    :param q: np.array([q1,q2,q3,q4])
+    :return:
+    """
+    p1,p2,p3,p4 = p
+    q1,q2,q3,q4 = q
+    return np.array([
+        p1*q4+p2*q3-p3*q2+p4*q1,
+        -p1*q3+p2*q4+p3*q1+p4*q2,
+        p1*q2-p2*q1+p3*q4+p4*q3,
+        -p1*q1-p2*q2-p3*q3+p4*q4
+    ])
+
+
+
+def rotate_vector_by_quaternion(vector, quaternion):
+    """
+    refer to the docs of 'quaternion_multiply()'
+    Rotate vector using quaternion.
+    :param vector: np.array([v1,v2,v3])
+    :param quaternion: np.array([q1,q2,q3,q4])
+    :return: vector of another coordinate system
+    """
+    vector_quat = np.array([*vector, 0])  # Convert vector to quaternion form
+    quaternion_conj = np.array([-quaternion[0], -quaternion[1], -quaternion[2], quaternion[3]])
+    rotated_quat = quaternion_multiply(
+        quaternion_multiply(quaternion_conj, vector_quat),
+        quaternion
+    )
+    return rotated_quat[:3]  # Return only the vector part
+
 
 
 class Swarm:
