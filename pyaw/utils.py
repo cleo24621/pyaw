@@ -283,7 +283,6 @@ def split_array(data, step=11):  # todo:: step
         raise "Cannot handle arrays of shapes with a length greater than 2"
     if len(data.shape) == 1:
         # Split the array
-        step = 11
         result = [data[i:i + step] for i in range(0, len(data) - step, step)]
         # Add the remaining columns to the last segment
         remainder = data[step * len(result):]
@@ -305,7 +304,7 @@ def split_array(data, step=11):  # todo:: step
     return result
 
 
-def get_coherences(Zxx1,Zxx2,cpsd_12) -> np.ndarray:
+def get_coherences(Zxx1,Zxx2,cpsd_12,step=11) -> np.ndarray:
     """
     the times and freqs corresponding to Zxx1 and Zxx2 should be the same.
     Zxx1 can be Zxx_e or Zxx_b, the order doesn't affect the result.
@@ -314,9 +313,9 @@ def get_coherences(Zxx1,Zxx2,cpsd_12) -> np.ndarray:
     :param cpsd_12:
     :return:
     """
-    cpsd12_split = split_array(cpsd_12)  # ls
-    denominator1ls = split_array(np.abs(Zxx1 ** 2))
-    denominator2ls = split_array(np.abs(Zxx2 ** 2))
+    cpsd12_split = split_array(cpsd_12,step=step)  # ls
+    denominator1ls = split_array(np.abs(Zxx1 ** 2),step=step)
+    denominator2ls = split_array(np.abs(Zxx2 ** 2),step=step)
 
     coherences_f = []
     for i in range(len(cpsd12_split)):
