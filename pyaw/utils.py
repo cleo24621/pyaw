@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pywt
 from matplotlib import pyplot as plt
+from numpy import ndarray
 from scipy.interpolate import interpolate, interp1d
 from scipy.signal import butter, filtfilt, welch
 
@@ -328,6 +329,40 @@ def get_coherences(Zxx1,Zxx2,cpsd_12,step=11) -> np.ndarray:
         coherences.append(np.abs(c_f).mean())
 
     return np.array(coherences)
+
+
+def get_middle_element(lst):
+    """
+    :param lst: list or np.ndarray
+    :return:
+    """
+    n = len(lst)
+    if n == 0:
+        return None  # Handle the case of an empty list
+    mid = n // 2
+    if n % 2 == 0:  # Even number of elements
+        return lst[mid - 1]  # Return the former one of the two middle elements
+    else:  # Odd number of elements
+        return lst[mid]  # Return the single middle element
+
+
+def get_phase_histogram_f_ave(phase_bins:ndarray,phase_histogram2d:ndarray):
+    """
+    :param phase_bins: shape should be (n,)
+    :param phase_histogram2d: shape should be (m,n-1)
+    :return:
+    """
+    phases = []
+    for i in range(len(phase_bins)-1):
+        phases.append((phase_bins[i+1]+phase_bins[i])/2)
+
+    phases_ave = []
+    for histogram in phase_histogram2d:
+        if np.sum(histogram) == 0:
+            phases_ave.append(0)
+        else:
+            phases_ave.append(np.sum(histogram * phases)/np.sum(histogram))
+    return np.array(phases_ave)
 
 
 class FFT:
