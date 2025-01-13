@@ -313,6 +313,8 @@ class CWT:
         hist_counts, freqs = self.get_phase_hist_counts()
         plt.figure(figsize=figsize)
         plt.imshow(hist_counts, extent=[-180, 180, freqs[-1], freqs[0]], aspect='auto', cmap='jet')
+        # 总结：数据一样，plt.imshow()和plt.pcolormesh()绘制的图像一样。
+        # 如果频率数组不是均匀分布，则用该方法绘制的图像的频率坐标不能一一对应。如果均匀分布，那么plt.imshow()和plt.pcolormesh()绘制的图像一致。
         plt.colorbar(label='Normalized Counts')
         plt.xlabel('Phase [degree]')
         plt.ylabel('Frequency [Hz]')

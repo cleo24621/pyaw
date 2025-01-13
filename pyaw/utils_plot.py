@@ -92,6 +92,13 @@ def plot_2signals_baselined(signal1: pd.Series, signal2: pd.Series,figsize=(10,4
     assert all(signal1.index == signal2.index), "signal1 and signal2 must have the same index"
     pass
 
+
+def plt_mark_nan(series):
+    plt.plot(series.isna(), marker='.', linestyle='None', color='red')
+    plt.title('NaN Positions in b_baselined')
+    plt.show()
+
+
 # plotly
 # interactive
 

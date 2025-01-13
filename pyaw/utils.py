@@ -136,6 +136,7 @@ def get_array_interpolated(x, y):
 
 def move_average(array: np.ndarray, window: int, center: bool = True, min_periods: int | None = None):
     """
+    在用于电场和磁场信号时，窗口长度一般对应于事件的长度，如20s。
     :param min_periods: the 'min_periods' parameter of the series.rolling() function
     :param center: the 'center' parameter of the series.rolling() function
     :param window: the window of the moving average. equal to fs * (the seconds of the window), and the windows must be an integer.
@@ -167,6 +168,7 @@ def wavelet_smooth(series_: pd.Series, wavelet='db4', level=6, threshold=0.2, mo
 class Butter:
     """
     a class to process array using butterworth filter
+    非抗混叠
     """
 
     def __init__(self, arr: np.ndarray, fs: float):
@@ -258,7 +260,7 @@ def get_phase_histogram2d(freqs: np.ndarray, phase_diffs: np.ndarray, num_bins: 
 def get_ratio_histogram2d(freqs: np.ndarray, ratio_bins: np.ndarray, bins: np.ndarray):
     """
     :param freqs: 1d
-    :param ratio_bins: 2d. different from phase_bins that is in [-180, 180], ratio_bins is in [0, max(ratio)] or [0,percentile95(ratio)].
+    :param ratio_bins: 2d. different from phase_bins that is in [-180, 180], ratio_bins is in [0, max(ratio)] or [0,percentile95(ratio)] or other reasonable value.
     :param bins: 1d
     :return: 2d ndarray
     """
