@@ -7,6 +7,7 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
+from pandas import DataFrame
 from spacepy.pycdf import CDF
 
 from pyaw.configs import s3_vars, ssm_vars
@@ -44,6 +45,7 @@ class SPDF:
 
     def r_s3(self, fp: str, vars_=s3_vars) -> pd.DataFrame:
         """
+        将spdf托管的ssies3载荷数据以pd.DataFrame的格式返回
         :param vars_: read variables that you need
         :param fp: path of ssies3 file
         :return: original data with specified variables
@@ -96,11 +98,12 @@ class SPDF:
         df_.rename(columns={'vx': 'v_s3_sc1', 'vy': 'v_s3_sc2', 'vz': 'v_s3_sc3'}, inplace=True)
         if all([e in df_.columns for e in ['bx', 'by', 'bz']]):
             df_['bz'] = -df_['bz']  # change down to up
-            df_.rename(columns={'bx': 'bm_enu2', 'by': 'bm_enu1', 'bz': 'bm_enu3'}, inplace=True)
+            df_.rename(columns={'bx': 'bm_enu2', 'by': 'bm_enu1', 'bz': 'bm_enu3'}, inplace=True)  # 'm' means IGRF model
         return df_
 
     def r_ssm(self, fp: str, vars_=ssm_vars) -> pd.DataFrame:
         """
+        将spdf托管的ssm载荷数据以pd.DataFrame的格式返回
         :param vars_: read variables that you need
         :param fp: path of ssm file
         :return: original data
@@ -174,27 +177,28 @@ class SPDF:
         :param ssm_df: the clipped ssm data
         :return:
         """
+        df = ssm_df.copy()
         # get b1_s3_sc
-        b1_s3_sc1, b1_s3_sc2, b1_s3_sc3 = self.ssm_sc2s3_sc(ssm_df['b1_ssm_sc1'], ssm_df['b1_ssm_sc2'],
-                                                            ssm_df['b1_ssm_sc3'])
-        ssm_df.drop(['b1_ssm_sc1', 'b1_ssm_sc2', 'b1_ssm_sc3'], axis=1, inplace=True)
-        ssm_df['b1_s3_sc1'] = b1_s3_sc1
-        ssm_df['b1_s3_sc2'] = b1_s3_sc2
-        ssm_df['b1_s3_sc3'] = b1_s3_sc3
+        b1_s3_sc1, b1_s3_sc2, b1_s3_sc3 = self.ssm_sc2s3_sc(df['b1_ssm_sc1'], df['b1_ssm_sc2'],
+                                                            df['b1_ssm_sc3'])
+        df.drop(['b1_ssm_sc1', 'b1_ssm_sc2', 'b1_ssm_sc3'], axis=1, inplace=True)
+        df['b1_s3_sc1'] = b1_s3_sc1
+        df['b1_s3_sc2'] = b1_s3_sc2
+        df['b1_s3_sc3'] = b1_s3_sc3
         # drop no needed variables
-        ssm_df.drop(
+        df.drop(
             ['sc_along_geo1', 'sc_along_geo2', 'sc_along_geo3', 'sc_across_geo1', 'sc_across_geo2', 'sc_across_geo3'],
             axis=1, inplace=True)
         # get b_s3_sc_orig
-        b_s3_sc_orig1, b_s3_sc_orig2, b_s3_sc_orig3 = self.ssm_sc2s3_sc(ssm_df['b_ssm_sc_orig1'],
-                                                                        ssm_df['b_ssm_sc_orig2'],
-                                                                        ssm_df['b_ssm_sc_orig3'])
-        ssm_df.drop(['b_ssm_sc_orig1', 'b_ssm_sc_orig2', 'b_ssm_sc_orig3'], axis=1, inplace=True)
-        ssm_df['b_s3_sc_orig1'] = b_s3_sc_orig1
-        ssm_df['b_s3_sc_orig2'] = b_s3_sc_orig2
-        ssm_df['b_s3_sc_orig3'] = b_s3_sc_orig3
+        b_s3_sc_orig1, b_s3_sc_orig2, b_s3_sc_orig3 = self.ssm_sc2s3_sc(df['b_ssm_sc_orig1'],
+                                                                        df['b_ssm_sc_orig2'],
+                                                                        df['b_ssm_sc_orig3'])
+        df.drop(['b_ssm_sc_orig1', 'b_ssm_sc_orig2', 'b_ssm_sc_orig3'], axis=1, inplace=True)
+        df['b_s3_sc_orig1'] = b_s3_sc_orig1
+        df['b_s3_sc_orig2'] = b_s3_sc_orig2
+        df['b_s3_sc_orig3'] = b_s3_sc_orig3
         # return final concat df
-        return pd.concat([s3_df, ssm_df], axis=1)
+        return pd.concat([s3_df, df], axis=1)
 
     def ssm_sc2s3_sc(self, com1: pd.Series, com2: pd.Series, com3: pd.Series) -> tuple[pd.Series, pd.Series, pd.Series]:
         """
@@ -229,14 +233,16 @@ class SPDF:
         u = com3
         return e, n, u
 
-    def get_E(self, v: pd.DataFrame, B: pd.DataFrame) -> np.ndarray:
+    def get_E(self, v: pd.DataFrame, B: pd.DataFrame) -> DataFrame:
         """
         pay attention the v and B are in the same coordinate system, and the coordinate system should be relatively stationary with respect to the satellite. For example, the ssies3 coordinate system, the enu coordinate system.
         :param v: velocity of ion
         :param B: measurement magnetic field
         :return:
         """
-        return np.cross(v.values, B.values)
+        assert v.index.dtype == 'datetime64[ns]'
+        assert np.all(np.equal(v.index.values,B.index.values))
+        return pd.DataFrame(np.cross(v.values, B.values) * 1e-6 * -1, columns=['1', '2', '3'],index=v.index.values)  # todo:: -v x b? 'np.cross()'?
 
     def compare_b1(self):
         pass  # todo:: compare b1 from different method
@@ -248,17 +254,17 @@ def r_madrigal_1s(fp):
     return dataset
 
 
-fp_s3 = r"D:\cleo\master\pyaw\data\dmsp-f18_ssies-3_thermal-plasma_201401010124_v01.cdf"
-fp_ssm = r"D:\cleo\master\pyaw\data\dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf"
-spdf = SPDF()
-s3_df = spdf.r_s3(fp_s3)
-s3_df_pre = spdf.s3_pre(s3_df)
-ssm_df = spdf.r_ssm(fp_ssm)
-ssm_df_pre = spdf.ssm_pre(ssm_df)
-clipped_ssm_df = spdf.clip_ssm_by_ssies3(s3_df_pre, ssm_df_pre)
-s3_ssm_df = spdf.get_s3_ssm(s3_df_pre, clipped_ssm_df)
-spdf.get_E(s3_ssm_df[['v_s3_sc1', 'v_s3_sc2', 'v_s3_sc3']],
-           s3_ssm_df[['b_s3_sc_orig1', 'b_s3_sc_orig2', 'b_s3_sc_orig3']])
+# fp_s3 = r"D:\cleo\master\pyaw\data\dmsp-f18_ssies-3_thermal-plasma_201401010124_v01.cdf"
+# fp_ssm = r"D:\cleo\master\pyaw\data\dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf"
+# spdf = SPDF()
+# s3_df = spdf.r_s3(fp_s3)
+# s3_df_pre = spdf.s3_pre(s3_df)
+# ssm_df = spdf.r_ssm(fp_ssm)
+# ssm_df_pre = spdf.ssm_pre(ssm_df)
+# clipped_ssm_df = spdf.clip_ssm_by_ssies3(s3_df_pre, ssm_df_pre)
+# s3_ssm_df = spdf.get_s3_ssm(s3_df_pre, clipped_ssm_df)
+# spdf.get_E(s3_ssm_df[['v_s3_sc1', 'v_s3_sc2', 'v_s3_sc3']],
+#            s3_ssm_df[['b_s3_sc_orig1', 'b_s3_sc_orig2', 'b_s3_sc_orig3']])
 
 # plt.figure()
 # assert clipped_ssm_d.index.equals(s3_d_pre.index)

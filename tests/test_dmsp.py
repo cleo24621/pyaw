@@ -14,6 +14,7 @@ class TestDMSP(unittest.TestCase):
         self.assertGreater(len(result), 1, "The length of the DataFrame should be greater than 1")
 
     def test_r_ssm(self):
+        """todo:: modify"""
         fp = "D:\cleo\master\pyaw\data\DMSP\ssies3\dmsp-f18_ssies-3_thermal-plasma_202301010102_v01.cdf"
         dmsp = SPDF()
         result = dmsp.r_s3(fp)

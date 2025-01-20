@@ -324,7 +324,14 @@ def get_coherences(Zxx1,Zxx2,cpsd_12,step=11) -> np.ndarray:
     for i in range(len(cpsd12_split)):
         nominator = cpsd12_split[i].mean(axis=1)  # along axis1, not all elements.
         denominator = np.sqrt(denominator1ls[i].mean(axis=1)) * np.sqrt(denominator2ls[i].mean(axis=1))
-        coherences_f.append(nominator / denominator)
+        # Perform division, avoiding division by zero by setting the result to a specified value (e.g., 0)
+        result = np.divide(nominator, denominator, out=np.full_like(nominator, fill_value=0, dtype=complex),
+                           where=denominator != 0)
+        coherences_f.append(result)
+        # if denominator == 0:
+        #     coherences_f.append(0)
+        # else:
+        #     coherences_f.append(nominator / denominator)
 
     coherences = []
     for c_f in coherences_f:
