@@ -15,37 +15,45 @@ from scipy import interpolate
 from pyaw import configs, utils, utils_spectral
 
 
-class ZH1:
-    def __init__(self):
-        self.fillvalue_fgm = (-999999, -9999)
-
-    def r_hpm_cdsm(fp):
-        # Open the HDF5 file in read mode
-        with h5py.File(fp, 'r') as hdf:
-            # Create an empty dictionary to hold dataset names and data
-            data_dict = {}
-
-            # Recursively iterate through groups and datasets
-            def recursively_extract_data(group, data_dict):
-                for key in group.keys():
-                    item = group[key]
-                    if isinstance(item, h5py.Dataset):
-                        data = item[:]
-                        # Flatten the (n,1) dataset to a single column
-                        data_dict[key] = data.flatten()
-                    elif isinstance(item, h5py.Group):
-                        # If the item is a group, recursively extract its datasets
-                        recursively_extract_data(item, data_dict)
-
-            recursively_extract_data(hdf, data_dict)
-
-            # Convert the dictionary to a pandas DataFrame
-            df = pd.DataFrame(data_dict)
-            df['DATETIME'] = pd.to_datetime(df['UTC_TIME'].astype(str), format='%Y%m%d%H%M%S%f')
-        return df
+# class ZH1:
+#     """
+#     处理 hpm载荷的fgm和cdsm仪器的类，草稿。
+#     """
+#     def __init__(self):
+#         self.fillvalue_fgm = (-999999, -9999)
+#
+#     def r_hpm_cdsm(self,fp):
+#         # Open the HDF5 file in read mode
+#         with h5py.File(fp, 'r') as hdf:
+#             # Create an empty dictionary to hold dataset names and data
+#             data_dict = {}
+#
+#             # Recursively iterate through groups and datasets
+#             def recursively_extract_data(group, data_dict):
+#                 for key in group.keys():
+#                     item = group[key]
+#                     if isinstance(item, h5py.Dataset):
+#                         data = item[:]
+#                         # Flatten the (n,1) dataset to a single column
+#                         data_dict[key] = data.flatten()
+#                     elif isinstance(item, h5py.Group):
+#                         # If the item is a group, recursively extract its datasets
+#                         recursively_extract_data(item, data_dict)
+#
+#             recursively_extract_data(hdf, data_dict)
+#
+#             # Convert the dictionary to a pandas DataFrame
+#             df = pd.DataFrame(data_dict)
+#             df['DATETIME'] = pd.to_datetime(df['UTC_TIME'].astype(str), format='%Y%m%d%H%M%S%f')
+#         return df
 
 
 def print_name(fp):
+    """
+    打印变量名
+    :param fp: 文件路径
+    :return:
+    """
     with h5py.File(fp, 'r') as h5file:
         def print_name_(name):
             print(name)
@@ -55,6 +63,11 @@ def print_name(fp):
 
 
 def get_dfs(fp):
+    """
+    单个变量数据由DataFrame格式存储，所有变量数据存储在字典中，键对应变量名，值对应相应的DataFrame
+    :param fp: 文件路径
+    :return:
+    """
     dataframes = {}
     with h5py.File(fp, 'r') as h5file:
         for name, dataset in h5file.items():
@@ -107,7 +120,7 @@ class FGM:
 class SCMULF:
     def __init__(self, fp):
         self.fs = 1024
-        self.row_len = 4096
+        self.row_len = 4096  # DataFrame行长度
         # self.target_fs = 16
         self.fp = fp
         self.dfs = get_dfs(self.fp)
@@ -117,6 +130,10 @@ class SCMULF:
         self.df1c_scm = self.concat_data()
 
     def concat_data(self):
+        """
+        将所有变量数据对应的字典转换成DataFrame
+        :return:
+        """
         dict1c = {}
         for key in configs.scm_ulf_1c_vars:
             dict1c[key] = self.dfs[key].squeeze().values
@@ -334,7 +351,9 @@ class EFDSCMClip:
 
 
 def main():
-    pass
+    fp_scmulf = r"D:\cleo\master\pyaw\data\zh1\scm\CSES_01_SCM_1_L02_A2_178261_20210420_000623_20210420_004156_000.h5"
+    scmulf = SCMULF(fp_scmulf)
+
     # fp_efd = r"\\Diskstation1\file_three\aw\zh1\efd\ulf\201911\CSES_01_EFD_1_L02_A1_096790_20191031_233350_20191101_000824_000.h5"
     # fp_scm = r"\\Diskstation1\file_three\aw\zh1\scm\ulf\201911\CSES_01_SCM_1_L02_A2_096790_20191031_233256_20191101_000821_000.h5"
     # start = pd.Timestamp('2019-10-31 23:34:08.0')
