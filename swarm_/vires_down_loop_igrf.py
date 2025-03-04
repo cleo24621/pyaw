@@ -52,8 +52,8 @@ def download_orbit_collection(request,spacecraft,orbit_number,collection,sdir="V
 # 要循环的列表
 request = SwarmRequest()
 
-orbit_number_st_et = {'A':(request.get_orbit_number('A', '20160301T000000', mission='Swarm'),
-                           request.get_orbit_number('A','20160501T000000',mission='Swarm')),
+orbit_number_st_et = {'A':(request.get_orbit_number('A', '20160601T000000', mission='Swarm'),
+                           request.get_orbit_number('A','20160630T000000',mission='Swarm')),
                       }
 collections_dic = {'MAG_HR':["SW_OPER_MAGA_HR_1B"]}
 
