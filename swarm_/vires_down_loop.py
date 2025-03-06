@@ -18,12 +18,10 @@ request = SwarmRequest()
 #                'MAG_HR':["SW_OPER_MAGA_HR_1B","SW_OPER_MAGB_HR_1B","SW_OPER_MAGC_HR_1B"],
 #                'LP_1B':["SW_OPER_EFIA_LP_1B","SW_OPER_EFIB_LP_1B","SW_OPER_EFIC_LP_1B"]}
 
-orbit_number_st_et = {'A':(request.get_orbit_number('A', '20160301T000000', mission='Swarm'),
-                           request.get_orbit_number('A','20160501T000000',mission='Swarm')),
+orbit_number_st_et = {'A':(request.get_orbit_number('A', '20160608T000000', mission='Swarm'),
+                           request.get_orbit_number('A','20160630T000000',mission='Swarm')),
                       }
-collections_dic = {'TCT16':["SW_EXPT_EFIA_TCT16", "SW_EXPT_EFIB_TCT16", "SW_EXPT_EFIC_TCT16"],
-               'MAG_HR':["SW_OPER_MAGA_HR_1B","SW_OPER_MAGB_HR_1B","SW_OPER_MAGC_HR_1B"],
-               'LP_1B':["SW_OPER_EFIA_LP_1B","SW_OPER_EFIB_LP_1B","SW_OPER_EFIC_LP_1B"]}
+collections_dic = {'MAG_HR':["SW_OPER_MAGA_HR_1B"],}
 
 for collection_key,collection_value_ls in collections_dic.items():
     print(collection_key)
@@ -39,8 +37,8 @@ for collection_key,collection_value_ls in collections_dic.items():
             print(orbit_number)
             try:
                 download_st = time.time()
-                download_orbit_collection(request, spacecraft, orbit_number, collection)
-                time.sleep(1)
+                download_orbit_collection(request, spacecraft, orbit_number, collection,sdir='./')
+                # time.sleep(1)
                 download_et = time.time()
                 print(f"download cost: {download_et-download_st} s")
             except Exception as e:
