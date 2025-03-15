@@ -19,15 +19,18 @@ from viresclient import SwarmRequest
 import logging
 
 
-def download_orbit_collection(request,spacecraft,orbit_number,collection,sdir="V:/aw/swarm/vires/IGRF"):
+def download_orbit_collection(request,spacecraft,orbit_number,collection,sdir="V:/aw/swarm/vires"):
     """
     下载单轨数据产品，并保存到指定路径
     :return:
     """
     st,et = request.get_times_for_orbits(orbit_number, orbit_number, spacecraft=spacecraft, mission='Swarm')  # todo: 将轨道对应的起止时间存储起来，不用重复获取时间
-    sdir = Path(sdir) / Path(f"{collection}")
-    # sdir = Path(f"V:/aw/swarm/vires/{collection}")
-    sfn = Path(f"IGRF_{collection}_{orbit_number}_{st.strftime('%Y%m%dT%H%M%S')}_{et.strftime('%Y%m%dT%H%M%S')}.pkl")
+    # sdir = Path(sdir) / Path(f"{collection}")
+    # sdir = Path(sdir) / Path(f"IGRF/{collection}")
+    sdir = Path(f"V:/aw/swarm/vires/{collection}")
+    sfn = Path(f"aux_{collection}_{orbit_number}_{st.strftime('%Y%m%dT%H%M%S')}_{et.strftime('%Y%m%dT%H%M%S')}.pkl")
+    # sfn = Path(f"IGRF_{collection}_{orbit_number}_{st.strftime('%Y%m%dT%H%M%S')}_{et.strftime('%Y%m%dT%H%M%S')}.pkl")
+    # sfn = Path(f"{collection}_{orbit_number}_{st.strftime('%Y%m%dT%H%M%S')}_{et.strftime('%Y%m%dT%H%M%S')}.pkl")
     if not sdir.exists():
         sdir.mkdir(parents=True, exist_ok=True)
         print(f"目录已创建: {sdir}")
@@ -53,9 +56,11 @@ def download_orbit_collection(request,spacecraft,orbit_number,collection,sdir="V
 request = SwarmRequest()
 
 orbit_number_st_et = {'A':(request.get_orbit_number('A', '20160601T000000', mission='Swarm'),
-                           request.get_orbit_number('A','20160630T000000',mission='Swarm')),
+                           request.get_orbit_number('A','20160701T000000',mission='Swarm')),
                       }
 collections_dic = {'MAG_HR':["SW_OPER_MAGA_HR_1B"]}
+# collections_dic = {'TCT16':["SW_EXPT_EFIA_TCT16"]}
+
 
 for collection_key,collection_value_ls in collections_dic.items():
     print(collection_key)
@@ -65,14 +70,16 @@ for collection_key,collection_value_ls in collections_dic.items():
         print(spacecraft)
         print(orbit_number_st_et_value)
         request.set_collection(collection)
-        # measurements = request.available_measurements(collection)
-        request.set_products(models=['IGRF'])
+        measurements = request.available_measurements(collection)
+        # request.set_products(auxiliaries=['AscendingNodeLongitude','QDLat', 'QDLon','QDBasis', 'MLT','SunDeclination'])
+        # request.set_products(models=['IGRF'])
+        request.set_products(measurements=measurements)
         for orbit_number in range(orbit_number_st_et_value[0],orbit_number_st_et_value[1]+1):
             print(orbit_number)
             try:
                 download_st = time.time()
                 download_orbit_collection(request, spacecraft, orbit_number, collection)
-                time.sleep(1)
+                # time.sleep(1)
                 download_et = time.time()
                 print(f"download cost: {download_et-download_st} s")
             except Exception as e:

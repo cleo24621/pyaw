@@ -185,6 +185,55 @@ def rotate_vector_by_quaternion(vector, quaternion):
     return rotated_quat[:3]  # Return only the vector part
 
 
+def calculate_rotated_vectors(B_NEC, B_NEC_IGRF, q_NEC_CRF):
+    b_sc = []  # b in S/C
+    b_igrf_sc = []  # igrf b in S/C
+    for b_nec, b_nec_igrf, q_NEC_CRF in zip(B_NEC, B_NEC_IGRF, q_NEC_CRF):
+        q_CRF_NEC = np.array([-q_NEC_CRF[0], -q_NEC_CRF[1], -q_NEC_CRF[2], q_NEC_CRF[3]])
+        b_sc.append(rotate_vector_by_quaternion(b_nec, q_CRF_NEC))
+        b_igrf_sc.append(rotate_vector_by_quaternion(b_nec_igrf, q_CRF_NEC))
+    b_sc = np.array(b_sc)
+    b_igrf_sc = np.array(b_igrf_sc)
+    return b_sc, b_igrf_sc
+
+
+def plot_with_x_dt_lat_qdlat_mlt(datetimes,values,latitudes,qdlats,mlts,step=20000):
+    """
+    e.g., plot_with_x_dt_lat_qdlat_mlt(df.index.values,bn_disturb,df['Latitude'].values,df_aux['QDLat'].values,df_aux['MLT'].values)
+    :param datetimes:
+    :param values:
+    :param latitudes:
+    :param qdlats:
+    :param mlts:
+    :param step:
+    :return:
+    """
+    # 创建图像
+    fig, ax = plt.subplots(figsize=(18, 8))
+    # 绘制数据
+    ax.plot(datetimes, values, label='disturb magnetic field')
+    datetime_ls = [np.datetime64('2015-12-31T23:06:00'),np.datetime64('2015-12-31T23:08:30'),np.datetime64('2015-12-31T23:20:00'),
+                   np.datetime64('2015-12-31T23:27:00'),np.datetime64('2015-12-31T23:53:00'),np.datetime64('2015-12-31T23:57:00'),
+                   np.datetime64('2016-01-01T00:04:00'),np.datetime64('2016-01-01T00:13:00')]
+    for datetime_ in datetime_ls:
+        plt.axvline(datetime_, color='r', linestyle='--')
+    # plt.text(np.datetime64('2015-12-31T23:06'), max(values) * 0.9, f"{np.datetime64('2015-12-31T23:06')}", rotation=90, color='r', ha='right', va='top')
+    # ax.set_ylabel('Value', color='b')
+    # ax.tick_params(axis='y', labelcolor='b')
+
+    # 设置时间轴标签
+    datetime_ticks = datetimes[::step]
+    latitude_ticks = latitudes[::step]
+    qdlat_ticks = qdlats[::step]
+    mlt_ticks = mlts[::step]
+    ax.set_xticks(datetime_ticks)
+    datetime_ticks_formatted = [t[11:19] for t in np.datetime_as_string(datetime_ticks,unit='s')]
+    ax.set_xticklabels([f"time: {t}\nlat: {lat:.2f}°\nqdlat: {qdlat:.2f}\nmlt: {mlt:.2f}" if i == 0 else f"{t}\n{lat:.2f}\n{qdlat:.2f}\n{mlt:.2f}°" for i,t, lat,qdlat,mlt in zip(range(len(datetime_ticks_formatted)),datetime_ticks_formatted, latitude_ticks,qdlat_ticks,mlt_ticks)])
+
+    return fig, ax
+
+# write a sort funct
+
 
 class Swarm:
     def __init__(self, fp: str, payload: str, start: str, end: str, handle_outliers: Optional[bool] = True,
