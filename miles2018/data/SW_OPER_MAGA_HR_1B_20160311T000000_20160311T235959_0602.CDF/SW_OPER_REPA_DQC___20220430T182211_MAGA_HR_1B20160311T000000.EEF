@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+<Earth_Explorer_File>
+  <Earth_Explorer_Header>
+    <Fixed_Header>
+      <File_Name>SW_OPER_REPA_DQC___20220430T182211_MAGA_HR_1B20160311T000000</File_Name>
+      <File_Description>APPROVE Test Report File</File_Description>
+      <Notes>APPROVE 2.7.3</Notes>
+      <Mission>Swarm</Mission>
+      <File_Class>OPER</File_Class>
+      <File_Type>REPA_DQC__</File_Type>
+      <Validity_Period>
+        <Validity_Start>UTC=2016-03-11T00:00:00</Validity_Start>
+        <Validity_Stop>UTC=2016-03-11T23:59:59</Validity_Stop>
+      </Validity_Period>
+      <File_Version>0602</File_Version>
+      <Source>
+        <System>FRB</System>
+        <Creator>DQC_A</Creator>
+        <Creator_Version>03.20</Creator_Version>
+        <Creation_Date>UTC=2022-04-30T18:22:11</Creation_Date>
+      </Source>
+    </Fixed_Header>
+    <Variable_Header>
+      <Product>SW_OPER_MAGA_HR_1B_20160311T000000_20160311T235959_0602</Product>
+      <Test_Definition_File>SW_OPER_AUX_PAR_QC_00000000T000000_99999999T999999_0021</Test_Definition_File>
+      <Format_Definition_File>SWARM-20220318.codadef</Format_Definition_File>
+      <Product_Quality>VALID_PRODUCT</Product_Quality>
+    </Variable_Header>
+  </Earth_Explorer_Header>
+  <Data_Block type="xml">
+    <List_of_Test_Modes count="6">
+      <Test_Mode>STRUCTURE_SIZE_AND_READ_HEADER</Test_Mode>
+      <Test_Mode>EXPRESSION_HEADER</Test_Mode>
+      <Test_Mode>STRUCTURE_SIZE_AND_READ_ASM_VFM_IC</Test_Mode>
+      <Test_Mode>EXPRESSION_ASM_VFM_IC</Test_Mode>
+      <Test_Mode>STRUCTURE_SIZE_AND_READ_MDR_MAG_HR</Test_Mode>
+      <Test_Mode>EXPRESSION_MDR_MAG_HR</Test_Mode>
+    </List_of_Test_Modes>
+    <List_of_Messages count="0"></List_of_Messages>
+  </Data_Block>
+</Earth_Explorer_File>

@@ -1,0 +1,11 @@
+2025-03-17 21:25:32,413 - WPS10Service: 200 POST https://vires.services/ows 18.548s
+2025-03-17 21:25:39,130 - WPS10Service: 200 POST https://vires.services/ows 6.701s
+2025-03-17 21:25:49,377 - WPS10Service: 200 POST https://vires.services/ows 10.154s
+2025-03-17 21:25:49,378 - WPS10Service: ACCEPTED https://production-faster.vires.services/wps/3c7717ab-5847-46ee-b5a0-c3d20d6e3277/executeResponse.xml 10.155s
+2025-03-17 21:25:59,380 - WPS10Service: 200 GET https://production-faster.vires.services/wps/3c7717ab-5847-46ee-b5a0-c3d20d6e3277/executeResponse.xml 9.002s
+2025-03-17 21:25:59,381 - WPS10Service: FINISHED https://production-faster.vires.services/wps/3c7717ab-5847-46ee-b5a0-c3d20d6e3277/executeResponse.xml 20.158s
+2025-03-17 21:25:59,381 - WPS10Service: 20.158s elapsed: Percent Completed: 100
+
+2025-03-17 21:26:10,109 - WPS10Service: 200 GET https://production-faster.vires.services/wps/3c7717ab-5847-46ee-b5a0-c3d20d6e3277/SW_OPER_MAGA_HR_1B_20160114T234831_20160115T012206_Filtered.cdf 10.726s
+2025-03-17 21:26:17,941 - WPS10Service: 200 POST https://vires.services/ows 7.833s
+2025-03-17 21:26:23,592 - Downloaded: IGRF_SW_OPER_MAGA_HR_1B_12019_20160114T234831_20160115T012206.pkl, Size: 34820321 bytes, Path: V:\aw\swarm\vires\IGRF\SW_OPER_MAGA_HR_1B, Time: 44.432311058044434
