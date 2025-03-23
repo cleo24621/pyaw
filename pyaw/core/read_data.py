@@ -109,7 +109,9 @@ class Zh1Read:
             self.fp = file_path
             self.dfs = Zh1Read.get_dfs(file_path)
             verse_time = self.dfs["VERSE_TIME"].squeeze()
-            self.datetime = pd.to_datetime(verse_time, origin="2009-01-01", unit="ms")  # element is Timestamp type
+            self.datetime = pd.to_datetime(
+                verse_time, origin="2009-01-01", unit="ms"
+            )  # element is Timestamp type
             self.start_time = self.datetime.iloc[0]
             self.df1c_scm = self.concat_data()
 
@@ -126,7 +128,6 @@ class Zh1Read:
                 index=self.datetime.values, data=dict1c
             )  # DataFrame. index is DatetimeIndex; data is 'dict1c'
             return df1c
-
 
     class EFDUlf(SCMUlf):
         def __init__(self, fp):
@@ -149,6 +150,10 @@ class Zh1Read:
             return df1c
 
     class EFDSCMClip:
+        """
+        根据起止时间将efd和scm产品做切片并组合
+        """
+
         def __init__(self, st, et, fp_efd, fp_scm, threshold: float = 100):
             """
             :param st: the chosen start time
@@ -160,11 +165,11 @@ class Zh1Read:
             self.efd = Zh1Read.EFDUlf(fp_efd)  # efd instance
             self.scm = Zh1Read.SCMUlf(fp_scm)  # scm instance
             self.lowcut = 16.0  # frequency domain maximum
-            self.target_fs = 32  # target fs
+            self.target_fs = 32  # target fs （降采样（针对scmulf））
             assert (
                 self.scm.fs % self.target_fs == 0
-            ), "Original frequency must be divisible by target frequency"
-            # datetime clip
+            ), " the original frequency of SCMULF must be divisible by target frequency"
+            # datetime clip （得到起止时间内的datetime数组（scm和efd））
             self.scm_datetime_clip = self.scm.datetime.values[
                 (self.scm.datetime.values >= st) & (self.scm.datetime.values <= et)
             ]
@@ -189,14 +194,18 @@ class Zh1Read:
                 np.diff(self.efd_datetime_clip) - e_theory_interval
                 < pd.Timedelta(1 / self.efd.fs, unit="s")
             ), "the datetime duration of clipped e minus the theory datetime duration should be less than the set threshold."
-            self.efd_geo = pd.DataFrame(
-                index=self.efd.datetime.values,
-                data={
-                    "lat": self.efd.dfs["GEO_LAT"].squeeze().values,
-                    "lon": self.efd.dfs["GEO_LON"].squeeze().values,
-                    "alt": self.efd.dfs["ALTITUDE"].squeeze().values,
-                },
-            )
+
+            # efd
+            # 优化
+            # self.efd_geo = pd.DataFrame(
+            #     index=self.efd.datetime.values,
+            #     data={
+            #         "lat": self.efd.dfs["GEO_LAT"].squeeze().values,
+            #         "lon": self.efd.dfs["GEO_LON"].squeeze().values,
+            #         "alt": self.efd.dfs["ALTITUDE"].squeeze().values,
+            #     },
+            # )
+            # 对n*m (m>1)的变量数据的处理
             self.A111_W = pd.DataFrame(
                 index=self.efd.datetime.values, data=self.efd.dfs["A111_W"].values
             )
@@ -206,14 +215,16 @@ class Zh1Read:
             self.A113_W = pd.DataFrame(
                 index=self.efd.datetime.values, data=self.efd.dfs["A113_W"].values
             )
-            self.scm_geo = pd.DataFrame(
-                index=self.scm.datetime.values,
-                data={
-                    "lat": self.scm.dfs["GEO_LAT"].squeeze().values,
-                    "lon": self.scm.dfs["GEO_LON"].squeeze().values,
-                    "alt": self.scm.dfs["ALTITUDE"].squeeze().values,
-                },
-            )
+
+            # scm
+            # self.scm_geo = pd.DataFrame(
+            #     index=self.scm.datetime.values,
+            #     data={
+            #         "lat": self.scm.dfs["GEO_LAT"].squeeze().values,
+            #         "lon": self.scm.dfs["GEO_LON"].squeeze().values,
+            #         "alt": self.scm.dfs["ALTITUDE"].squeeze().values,
+            #     },
+            # )
             self.A231_W = pd.DataFrame(
                 index=self.scm.datetime.values, data=self.scm.dfs["A231_W"].values
             )
@@ -223,6 +234,8 @@ class Zh1Read:
             self.A233_W = pd.DataFrame(
                 index=self.scm.datetime.values, data=self.scm.dfs["A233_W"].values
             )
+
+            # 切片（起止时间内）
             (
                 self.df1c_efd_clip,
                 self.df1c_scm_clip,
@@ -249,13 +262,17 @@ class Zh1Read:
                     self.A233_W,
                 )
             )
+
             # from now, I use the clipped data for analysis.
+            # 坐标变换
             self.e_enu1, self.e_enu2, self.e_enu3 = (
                 self.efd_geo2enu()
             )  # time clipped data
             self.b_enu1, self.b_enu2, self.b_enu3 = (
                 self.scm_geo2enu()
             )  # same time clipped data
+
+            # 降采样
             # get the datetime corresponding to the target fs
             self.resample_factor = int(self.scm.fs / self.target_fs)
             interval = 1 / self.target_fs
@@ -273,8 +290,9 @@ class Zh1Read:
                 freq=f"{1 / self.efd.fs}s",
             )  # b_datetime is similar, but I don't need, I just need the resampled b_datetime that is 'self.datetime'
             self.e_resampled_ls = self.e_resampled()
-            self.data = self.get_data()
-            self.data_preprocessed = self.preprocess_data()
+
+            self.data = self.get_data()  # 获取所需的数据
+            self.data_preprocessed = self.preprocess_data()  # 所需数据的预处理
 
         def mode_choose(self):
             pass
