@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import os
 import matplotlib.path as mpath  # 添加此行！
+
+import utils.coordinate
 from pyaw import utils
 
 def process_data(df_e):
@@ -16,8 +18,8 @@ def process_data(df_e):
     VsatE = df_e['VsatE'].values
 
     # 计算旋转矩阵
-    rotmat_nec2sc, rotmat_sc2nec = utils.get_rotmat_nec2sc_sc2nec(VsatN, VsatE)
-    e_north, e_east = utils.do_rotation(-Ehx, -Ehy, rotmat_sc2nec)
+    rotmat_nec2sc, rotmat_sc2nec = utils.coordinate.get_rotmat_nec2sc_sc2nec(VsatN, VsatE)
+    e_north, e_east = utils.coordinate.do_rotation(-Ehx, -Ehy, rotmat_sc2nec)
 
     # 北半球筛选（使用布尔索引）
     mask_northern = lats >= 0

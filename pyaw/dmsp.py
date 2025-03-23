@@ -10,7 +10,7 @@ import xarray as xr
 from pandas import DataFrame
 from spacepy.pycdf import CDF
 
-from pyaw.configs import s3_vars, ssm_vars
+from pyaw.configs import ssies3_vars, ssm_vars
 
 
 # class
@@ -43,7 +43,7 @@ class SPDF:
         self._te_valid_value_min = 500  # electron temperature
         self._te_valid_value_max = 1e4
 
-    def r_s3(self, fp: str, vars_=s3_vars) -> pd.DataFrame:
+    def r_s3(self, fp: str, vars_=ssies3_vars) -> pd.DataFrame:
         """
         将spdf托管的ssies3载荷数据以pd.DataFrame的格式返回
         :param vars_: read variables that you need

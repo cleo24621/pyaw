@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import os
 import matplotlib.path as mpath  # 添加此行！
+
+import utils.data
 from pyaw import utils
 
 def process_data(df_b,df_b_igrf):
@@ -11,8 +13,8 @@ def process_data(df_b,df_b_igrf):
     lats = df_b['Latitude'].values
     lons = df_b['Longitude'].values
 
-    Bn, Be, _ = utils.get_3arrs(df_b['B_NEC'].values)
-    bn_igrf, be_igrf, _ = utils.get_3arrs(df_b_igrf['B_NEC_IGRF'].values)
+    Bn, Be, _ = utils.data.get_3arrs(df_b['B_NEC'].values)
+    bn_igrf, be_igrf, _ = utils.data.get_3arrs(df_b_igrf['B_NEC_IGRF'].values)
     bn = Bn - bn_igrf
     be = Be - be_igrf
 

@@ -14,6 +14,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+import utils.coordinate
+import utils.data
 from pyaw import utils
 
 
@@ -96,8 +99,8 @@ def process_data_tct16(df_e,hemisphere='north'):
     VsatN = df_e['VsatN'].values
     VsatE = df_e['VsatE'].values
     # 计算旋转矩阵
-    rotmat_nec2sc, rotmat_sc2nec = utils.get_rotmat_nec2sc_sc2nec(VsatN, VsatE)
-    en, ee = utils.do_rotation(-Ehx, -Ehy, rotmat_sc2nec)  # en: e north; ee: e east
+    rotmat_nec2sc, rotmat_sc2nec = utils.coordinate.get_rotmat_nec2sc_sc2nec(VsatN, VsatE)
+    en, ee = utils.coordinate.do_rotation(-Ehx, -Ehy, rotmat_sc2nec)  # en: e north; ee: e east
     # nor and south
     indices = get_split_indices(lats)
     northern_slice = slice(*indices[0])
@@ -127,8 +130,8 @@ def process_data(df_b,df_b_igrf):
     lats = df_b['Latitude'].values
     lons = df_b['Longitude'].values
 
-    Bn, Be, _ = utils.get_3arrs(df_b['B_NEC'].values)
-    bn_igrf, be_igrf, _ = utils.get_3arrs(df_b_igrf['B_NEC_IGRF'].values)
+    Bn, Be, _ = utils.data.get_3arrs(df_b['B_NEC'].values)
+    bn_igrf, be_igrf, _ = utils.data.get_3arrs(df_b_igrf['B_NEC_IGRF'].values)
     bn = Bn - bn_igrf
     be = Be - be_igrf
 

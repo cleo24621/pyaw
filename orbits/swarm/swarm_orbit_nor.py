@@ -9,10 +9,10 @@ import pandas as pd
 from utils import get_split_indices
 
 
-def plot_orbit(lons, lats, proj_method="NorthPolarStereo", central_longitude=0,
-               figsize=(12, 12), lon_lat_ext=(-180, 180, 0, 90),
-               title='North Hemisphere Map using NorthPolarStereo Projection',
-               if_cfeature=False):
+def plot_northern_hemisphere_satellite_orbit(lons, lats, proj_method="NorthPolarStereo", central_longitude=0,
+                                             figsize=(12, 12), lon_lat_ext=(-180, 180, 0, 90),
+                                             title='North Hemisphere Map using NorthPolarStereo Projection',
+                                             if_cfeature=False):
     proj_dict = {
         "NorthPolarStereo": ccrs.NorthPolarStereo,
         "SouthPolarStereo": ccrs.SouthPolarStereo
@@ -48,7 +48,7 @@ def plot_orbit(lons, lats, proj_method="NorthPolarStereo", central_longitude=0,
 
 # 主程序部分
 df_path = Path(
-    r"V:\aw\swarm\vires\AHY9U3~9\SW_OPER_MAGA_LR_1B") / "aux_only_gdcoors_SW_OPER_MAGA_LR_1B_12727_20160229T235551_20160301T012924.pkl"
+    r"V:\aw\swarm\vires\auxiliaries\SW_OPER_MAGA_LR_1B") / "aux_SW_OPER_MAGA_LR_1B_12728_20160301T012924_20160301T030258.pkl"
 df = pd.read_pickle(df_path)
 
 lats = df['Latitude'].values
@@ -57,4 +57,4 @@ northern_slice = slice(*indices[0])
 orbit_lats = lats[northern_slice]
 orbit_lons = df['Longitude'].values[northern_slice]
 
-plot_orbit(orbit_lons, orbit_lats)
+plot_northern_hemisphere_satellite_orbit(orbit_lons, orbit_lats)
