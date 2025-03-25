@@ -1,9 +1,55 @@
+# IDE/Editor configurations
 /.idea/
+/.vscode/
+.ipynb_checkpoints/
+
+# Project directories
 /data/
 /docs/
 /results/
+/code_back/
+
+# Compiled Python files
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Package files
+*.zip
+*.tar.gz
+*.7z
+
+# Environment files
+.env
+.venv/
+venv/
+
+# Specific files to ignore
 ne_110m_coastline.zip
 SuperMAG-RulesOfTheRoad.txt
 zh1.ipynb
-/code_back/
-.ipynb_checkpoints/
+
+# Local development files
+*.local.*
+override.*
+
+# Testing artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Jupyter notebook checkpoints (already covered above)
+# Additional notebook outputs (if needed)
+# *.ipynb
