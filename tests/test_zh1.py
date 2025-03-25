@@ -1,53 +1,63 @@
+import os
 import unittest
 
 import pandas as pd
+from pandas import DataFrame
 
-import zh1.zh1
-from pyaw import configs
+from core import zh1
+from pyaw.utils.file import find_parent_directory
+from pyaw.configs import Zh1Configs
 
 
 class TestFGM(unittest.TestCase):
     def test_get_df(self):
-        fp = r"\\Diskstation1\file_three\aw\zh1\hpm\fgm\201911\CSES_01_HPM_5_L02_A2_096791_20191101_001933_20191101_005555_000.h5"
-        fgm = zh1.zh1.FGM(fp)
-        df = fgm.get_df()
-        print(type(df))
-        self.assertTrue(type(df) == pd.DataFrame)
+        data_dir_path = find_parent_directory(os.path.dirname(__file__), "data")
+        file_name = "CSES_01_HPM_5_L02_A2_096791_20191101_001933_20191101_005555_000.h5"
+        file_path = os.path.join(data_dir_path,file_name)
+        fgm = zh1.FGM(file_path)
+        df = fgm.df
+        # test
+        self.assertIsInstance(df,DataFrame)
         self.assertTrue(not df.empty)
-        print(df.info(), '\n')
-        print(df.columns)
-        for var in configs.fgm_vars:
+        for var in Zh1Configs.fgm_vars:
             self.assertTrue(var in df.columns, f"{var} is not in the dataframe")
+        self.assertIsInstance(df.index,pd.RangeIndex)  # 检验索引列
 
 
-class TestSCMULF(unittest.TestCase):
-    def test_get_signal(self):
-        fp = r"\\Diskstation1\file_three\aw\zh1\scm\ulf\201911\CSES_01_SCM_1_L02_A2_096790_20191031_233256_20191101_000821_000.h5"
-        scm = zh1.zh1.SCMULF(fp)
-        for var in configs.scm_ulf_vars:
+class TestSCM(unittest.TestCase):
+    def test_success_call(self):
+        data_dir_path = find_parent_directory(os.path.dirname(__file__), "data")
+        file_name = "CSES_01_SCM_1_L02_A2_096790_20191031_233256_20191101_000821_000.h5"
+        file_path = os.path.join(data_dir_path,file_name)
+        scm = zh1.SCM(file_path)  # 成功调用类
+        for var in Zh1Configs.scm_ulf_vars:
             self.assertTrue(var in scm.dfs.keys(), f"the DataFrame of {var} is not in the dataframes")
-        # for var in configs.scm_ulf_resample_vars:
-        #     signal = scm._get_resample_signal(var)
-        #     self.assertTrue(type(signal) == pd.Series)
-        #     self.assertTrue(not signal.empty)
-        #     self.assertTrue(signal.index.dtype == 'datetime64[ns]')
-        #     self.assertTrue(signal.index.freq.name == 'us' and signal.index.freq.n == 62500)
-        #     print(signal.name, ':')
-        #     print(signal.head())
-        #     print('------')
 
 
-class TestEFDULF(unittest.TestCase):
-    fp = r"\\Diskstation1\file_three\aw\zh1\efd\ulf\201911\CSES_01_EFD_1_L02_A1_096790_20191031_233350_20191101_000824_000.h5"
-    efd = zh1.zh1.EFDULF(fp)
+# todo: resample之后
+    # def test_get_signal(self):
+    #     for var in configs.scm_ulf_resample_vars:
+    #         signal = scm._get_resample_signal(var)
+    #         self.assertTrue(type(signal) == pd.Series)
+    #         self.assertTrue(not signal.empty)
+    #         self.assertTrue(signal.index.dtype == 'datetime64[ns]')
+    #         self.assertTrue(signal.index.freq.name == 'us' and signal.index.freq.n == 62500)
+    #         print(signal.name, ':')
+    #         print(signal.head())
+    #         print('------')
+#
+#
+class TestEFD(unittest.TestCase):
+    def test_success_call(self):
+        data_dir_path = find_parent_directory(os.path.dirname(__file__), "data")
+        file_name = "CSES_01_EFD_1_L2A_A1_175380_20210401_003440_20210401_010914_000.h5"
+        file_path = os.path.join(data_dir_path,file_name)
+        efd = zh1.EFD(file_path)  # 成功调用类
+        for var in Zh1Configs.efd_ulf_vars:
+            self.assertTrue(var in efd.dfs.keys(), f"the DataFrame of {var} is not in the dataframes")
 
-    def test_init(self):
-        self.assertEqual(self.efd.fs, 125)
-        # self.assertEqual(self.efd.target_fs, 25)
-
-    def test_get_signal(self):
-        for var in configs.efd_ulf_vars:
-            self.assertTrue(var in self.efd.dfs.keys(), f"the DataFrame of {var} is not in the dataframes")
+# todo: resample之后
+    # def test_get_signal(self):
         # for var in configs.efd_ulf_resample_vars:
         #     signal = self.efd._get_resample_signal(var)
         #     self.assertTrue(type(signal) == pd.Series)
@@ -59,8 +69,20 @@ class TestEFDULF(unittest.TestCase):
         #     print('------')
 
 
-class TestOther(unittest.TestCase):
-    pass
+class TestEFDSCMClip(unittest.TestCase):
+    def test_success_call(self):
+        data_dir_path = find_parent_directory(os.path.dirname(__file__), "data")
+        # same orbit number, same descend
+        scm_file_name = "CSES_01_SCM_1_L02_A2_175380_20210401_003346_20210401_010912_000.h5"
+        efd_file_name = "CSES_01_EFD_1_L2A_A1_175380_20210401_003440_20210401_010914_000.h5"
+        scm_file_path = os.path.join(data_dir_path,scm_file_name)
+        efd_file_path = os.path.join(data_dir_path,efd_file_name)
+        start_time = pd.Timestamp(year=2021,month=4,day=1,hour=0,minute=35)
+        end_time = pd.Timestamp(year=2021,month=4,day=1,hour=1,minute=0)
+        scm_efd = zh1.SCMEFDUlf(st=start_time,et=end_time,fp_scm=scm_file_path,fp_efd=efd_file_path)
+
+
+
 
 
 if __name__ == '__main__':

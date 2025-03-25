@@ -1,3 +1,6 @@
+from pyaw.utils.calculate import calculate_lower_bound,calculate_upper_bound
+
+
 class PhysicalParameters:
     # unified unit
 
@@ -31,17 +34,10 @@ class AlfvenWaveParameters:
     general_static_va = 1.3e6  # General static Alfven speed
     general_static_Sigma_P = 0.5  # General static Sigma_P
 
-    def __init__(self):
-        self.general_dynamic_lower_bound = self.calculate_lower_bound(self.general_dynamic_Sigma_P)
-        self.general_dynamic_upper_bound = self.calculate_upper_bound(self.general_dynamic_va,self.general_dynamic_Sigma_P)
+    general_dynamic_lower_bound = calculate_lower_bound(general_dynamic_Sigma_P)
+    general_dynamic_upper_bound = calculate_upper_bound(general_dynamic_va, general_dynamic_Sigma_P)
 
-        self.general_static_lower_bound = self.calculate_lower_bound(self.general_static_Sigma_P)
-        self.general_static_upper_bound = self.calculate_upper_bound(self.general_static_va,self.general_static_Sigma_P)
+    general_static_lower_bound = calculate_lower_bound(general_static_Sigma_P)
+    general_static_upper_bound = calculate_upper_bound(general_static_va, general_static_Sigma_P)
 
-    def calculate_lower_bound(self,Sigma_P):
-        mu0 = PhysicalParameters.mu0
-        return 1 / (mu0 * Sigma_P)
 
-    def calculate_upper_bound(self,va,Sigma_P):
-        mu0 = PhysicalParameters.mu0
-        return mu0 * va ** 2 * Sigma_P

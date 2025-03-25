@@ -6,11 +6,13 @@ from datetime import datetime, timedelta
 
 from pyaw.core.process_data import SwarmProcess
 
+import core.swarm
+
 
 class MyTestCase(unittest.TestCase):
     def test_rotate_vector_by_quaternion(self):
         """根据“Swarm Level 1b Processor Algorithms.pdf”中的四元数附录编写"""
-        rotate_vector_by_quaternion = SwarmProcess.MagPreprocess.NEC2SC.rotate_vector_by_quaternion
+        rotate_vector_by_quaternion = core.swarm.NEC2SCofMAG.rotate_vector_by_quaternion
         self.assertTrue(
             np.allclose(
                 rotate_vector_by_quaternion(

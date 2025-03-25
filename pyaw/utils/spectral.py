@@ -1,23 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-@Author      : 13927
-@Date        : 3/22/2025 8:42
-@Project     : pyaw
-@Description : 描述此文件的功能和用途。
-
-@Copyright   : Copyright (c) 2025, 13927
-@License     : 使用的许可证（如 MIT, GPL）
-@Last Modified By : 13927
-"""
 from typing import Optional
 
 import numpy as np
-from nptyping import NDArray, Float64
+from nptyping import NDArray
 import pywt
 from matplotlib import pyplot as plt
 from scipy.signal import welch
 
-from pyaw.utils.data import DataStructure
+from pyaw.utils import other
 
 
 class FFT:
@@ -25,7 +14,7 @@ class FFT:
     a class to get fft of a signal of sampling frequency fs
     """
 
-    def __init__(self, array: NDArray[Float64], fs: float):
+    def __init__(self, array: NDArray, fs: float):
         self.array = array
         self.fs = fs
 
@@ -159,7 +148,7 @@ def get_coherence(
         cpsd_12: the cross power spectral density of signal1 (array1) and signal2 (array2).
         step: Zxx1, Zxx2, cpsd_12 的拆分间隔
     """
-    split_array = DataStructure.split_array
+    split_array = other.split_array
     cpsd12_split = split_array(cpsd_12, step=step)  # ls
     denominator1ls = split_array(np.abs(Zxx1**2), step=step)
     denominator2ls = split_array(np.abs(Zxx2**2), step=step)
@@ -188,11 +177,3 @@ def get_coherence(
         coherence.append(np.abs(c_f).mean())
 
     return np.array(coherence)
-
-
-def main():
-    pass
-
-
-if __name__ == "__main__":
-    main()

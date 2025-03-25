@@ -5,13 +5,13 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib.dates as mdates
 
-import utils.data
+import utils.other
 from pyaw import utils
 
 fp = r"\\Diskstation1\file_three\aw\swarm\vires\SW_OPER_MAGA_HR_1B\SW_OPER_MAGA_HR_1B_11803_20151231T225422_20160101T002758.pkl"
 df = pd.read_pickle(fp)
 df_aux = pd.read_pickle(r"\\Diskstation1\file_three\aw\swarm\vires\AHY9U3~9\SW_OPER_MAGA_HR_1B\aux_SW_OPER_MAGA_HR_1B_11803_20151231T225422_20160101T002758.pkl")
-bn,be,bc = utils.data.get_3arrs(df['B_NEC'])
+bn,be,bc = get_3arrs(df['B_NEC'])
 bn_mov_ave = utils.data.move_average(bn, window=50 * 20, center=True, min_periods=1)
 bn_disturb = bn - bn_mov_ave
 

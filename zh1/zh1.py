@@ -11,10 +11,10 @@ import pandas as pd
 from pymap3d import ecef
 from scipy import interpolate
 
-import utils.data
+import utils.other
 from core.read_data import get_dfs
 from pyaw import configs, utils, utils_spectral
-from utils.file_process import print_hdf5_variable_name
+from utils.file import print_hdf5_structure
 
 
 # class ZH1:
