@@ -6,10 +6,11 @@ import pandas as pd
 from pandas import DataFrame, Series
 from pymap3d import ecef
 from scipy.interpolate import interpolate
-from scipy.signal import filtfilt
+from scipy.signal import filtfilt,butter,buttord
 
 from pyaw.configs import Zh1Configs
 from utils.filter import customize_butter
+from utils import other
 
 
 class FGM:
@@ -73,8 +74,8 @@ class SCM:
         "GEO_LAT",
         "GEO_LON",
     ]  # variable that will use new datetimes as index (remove variables that have different length of rows and variables that's not needed)
-    target_fs = 32
-    lowcut = target_fs / 2
+    # target_fs = 32
+    # lowcut = target_fs / 2
     f_t = 1
     f_z = 200
 
@@ -89,9 +90,9 @@ class SCM:
         self.tolerance = tolerance
         self.dfs = self._get_dfs()  # 所有变量对应的DataFrame组成的字典
 
-        self.datetimes_dfs = {
-            k: self.dfs[k] for k in self.new_datetimes_dfs_names
-        }  # note that the dfs index is not datetime type
+        # self.datetimes_dfs = {
+        #     k: self.dfs[k] for k in self.new_datetimes_dfs_names
+        # }  # note that the dfs index is not datetime type
 
         verse_time = self.dfs["VERSE_TIME"].squeeze()
         self.datetimes = pd.to_datetime(
@@ -100,8 +101,33 @@ class SCM:
         self.start_time = self.datetimes.iloc[0]
 
         # test: check
-        self._some_checks()
+        # self._some_checks()
         self._check_split()  # default the min length of slice is greater than 5
+
+        self.df1c = self._concat_data()
+
+        # ---
+
+        # get split data
+        self.df1c_split_list = self._get_split_data(self.df1c)
+        self.datetimes_split_list = self._get_split_data(self.datetimes)
+        # check length and index
+        assert len(self.df1c_split_list) == len(self.datetimes_split_list)
+        for i in range(len(self.df1c_split_list)):
+            assert np.array_equal(
+                self.df1c_split_list[i].index.values,
+                self.datetimes_split_list[i].values,
+            )
+
+        # # wave data, i.e., magnetic field
+        # self.A231_W_df = pd.DataFrame(index=self.datetimes.values, data=self.dfs['A231_W'].values)
+        # self.A232_W_df = pd.DataFrame(index=self.datetimes.values, data=self.dfs['A232_W'].values)
+        # self.A233_W_df = pd.DataFrame(index=self.datetimes.values, data=self.dfs['A233_W'].values)
+        # # get split dfs
+        # self.A231_W_df_split_list = self._get_split_data(self.A231_W_df)
+        # self.A232_W_df_split_list = self._get_split_data(self.A232_W_df)
+        # self.A233_W_df_split_list = self._get_split_data(self.A233_W_df)
+
 
         # todo: after explore
         # self.new_datetimes = self.fill_gaps(target=target, tolerance=tolerance)
@@ -109,7 +135,27 @@ class SCM:
         #     self._get_new_datetimes_dfs()
         # )  # the dfs index is datetime type and is new datetimes.
         #
-        # self.df1c = self._concat_data()
+
+    def get_wave_data_split_list(self):
+        # wave data, i.e., magnetic field
+        A231_W_df = pd.DataFrame(
+            index=self.datetimes.values, data=self.dfs["A231_W"].values
+        )
+        A232_W_df = pd.DataFrame(
+            index=self.datetimes.values, data=self.dfs["A232_W"].values
+        )
+        A233_W_df = pd.DataFrame(
+            index=self.datetimes.values, data=self.dfs["A233_W"].values
+        )
+        # get split dfs
+        self.A231_W_df_split_list = self._get_split_data(A231_W_df)
+        self.A232_W_df_split_list = self._get_split_data(A232_W_df)
+        self.A233_W_df_split_list = self._get_split_data(A233_W_df)
+        return (
+            self.A231_W_df_split_list,
+            self.A232_W_df_split_list,
+            self.A233_W_df_split_list,
+        )
 
     def _some_checks(self):
         assert self.fs % self.target_fs == 0
@@ -150,7 +196,7 @@ class SCM:
         )  # DataFrame. index is DatetimeIndex; data is 'dict1c'
         return df1c
 
-    def get_split_slices(self, min_length=5):
+    def _get_split_slices(self, min_length=5):
         dts_diff = self.datetimes.diff()
         dts_diff_diff = abs(dts_diff - self.set_time_delta)
         indices = dts_diff_diff[dts_diff_diff > self.tolerance].index
@@ -168,16 +214,24 @@ class SCM:
 
         return slices
 
-    def get_split_data(self, data: pd.Series | pd.DataFrame, min_length=5):
-        slices = self.get_split_slices(min_length=min_length)
+    def _get_split_data(self, data: pd.Series | pd.DataFrame, min_length=5):
+        slices = self._get_split_slices(min_length=min_length)
         split_data_list = []
         for slice_ in slices:
             split_data_list.append(data.iloc[slice_])
         return split_data_list
 
     def _check_split(self, min_length=5):
+        """
+        确保数据分割后其对应的时间索引约等于实际差值同根据起始时间、采样率计算的理论差值。
+        Args:
+            min_length:
+
+        Returns:
+
+        """
         dts = self.datetimes
-        split_dts = self.get_split_data(data=dts, min_length=min_length)
+        split_dts = self._get_split_data(data=dts, min_length=min_length)
         for split_dt in split_dts:
             split_dt_diff = split_dt.diff()
             split_dt_diff_diff = abs(split_dt_diff - self.set_time_delta)
@@ -358,6 +412,30 @@ class EFD(SCM):
         interp1d_funcs = [interpolate.interp1d(dts, data, fill_value="extrapolate")]
         return np.array([interp1d_func(new_dts) for interp1d_func in interp1d_funcs])
 
+    def _some_checks(self):
+        pass
+
+    def get_wave_data_split_list(self):
+        # wave data, i.e., magnetic field
+        A111_W_df = pd.DataFrame(
+            index=self.datetimes.values, data=self.dfs["A111_W"].values
+        )
+        A112_W_df = pd.DataFrame(
+            index=self.datetimes.values, data=self.dfs["A112_W"].values
+        )
+        A113_W_df = pd.DataFrame(
+            index=self.datetimes.values, data=self.dfs["A113_W"].values
+        )
+        # get split dfs
+        self.A111_W_df_split_list = self._get_split_data(A111_W_df)
+        self.A112_W_df_split_list = self._get_split_data(A112_W_df)
+        self.A113_W_df_split_list = self._get_split_data(A113_W_df)
+        return (
+            self.A111_W_df_split_list,
+            self.A112_W_df_split_list,
+            self.A113_W_df_split_list,
+        )
+
 
 class SCMEFDUlf:
     """
@@ -374,6 +452,241 @@ class SCMEFDUlf:
         """
         self.scm = SCM(fp_scm)  # scm instance
         self.efd = EFD(fp_efd)  # efd instance
+        self.lowcut = 16.0  # frequency domain maximum
+        self.target_fs = 32  # target fs
+        assert (
+            self.scm.fs % self.target_fs == 0
+        ), "Original frequency must be divisible by target frequency"
+        # datetime clip
+        self.scm_datetimes_clip = self.scm.datetimes.values[
+            (self.scm.datetimes.values >= st) & (self.scm.datetimes.values <= et)
+        ]
+        self.efd_datetimes_clip = self.efd.datetimes.values[
+            (self.efd.datetimes.values >= st) & (self.efd.datetimes.values <= et)
+        ]
+        self._check_datetimes_clip()
+
+        # initialize other dataframes
+        self.efd_geo = pd.DataFrame(
+            index=self.efd.datetimes.values,
+            data={
+                "lat": self.efd.dfs["GEO_LAT"].squeeze().values,
+                "lon": self.efd.dfs["GEO_LON"].squeeze().values,
+                "alt": self.efd.dfs["ALTITUDE"].squeeze().values,
+            },
+        )
+        self.A111_W = pd.DataFrame(
+            index=self.efd.datetimes.values, data=self.efd.dfs["A111_W"].values
+        )
+        self.A112_W = pd.DataFrame(
+            index=self.efd.datetimes.values, data=self.efd.dfs["A112_W"].values
+        )
+        self.A113_W = pd.DataFrame(
+            index=self.efd.datetimes.values, data=self.efd.dfs["A113_W"].values
+        )
+        self.scm_geo = pd.DataFrame(
+            index=self.scm.datetimes.values,
+            data={
+                "lat": self.scm.dfs["GEO_LAT"].squeeze().values,
+                "lon": self.scm.dfs["GEO_LON"].squeeze().values,
+                "alt": self.scm.dfs["ALTITUDE"].squeeze().values,
+            },
+        )
+        self.A231_W = pd.DataFrame(
+            index=self.scm.datetimes.values, data=self.scm.dfs["A231_W"].values
+        )
+        self.A232_W = pd.DataFrame(
+            index=self.scm.datetimes.values, data=self.scm.dfs["A232_W"].values
+        )
+        self.A233_W = pd.DataFrame(
+            index=self.scm.datetimes.values, data=self.scm.dfs["A233_W"].values
+        )
+
+        # clip
+        (
+            self.df1c_efd_clip,
+            self.df1c_scm_clip,
+            self.efd_geo_clip,
+            self.A111_W_clip,
+            self.A112_W_clip,
+            self.A113_W_clip,
+            self.scm_geo_clip,
+            self.A231_W_clip,
+            self.A232_W_clip,
+            self.A233_W_clip,
+        ) = (
+            i.loc[st:et]
+            for i in (
+                self.efd.df1c,
+                self.scm.df1c,
+                self.efd_geo,
+                self.A111_W,
+                self.A112_W,
+                self.A113_W,
+                self.scm_geo,
+                self.A231_W,
+                self.A232_W,
+                self.A233_W,
+            )
+        )
+
+        # from now, I use the clipped data for analysis.
+        self.e_enu1, self.e_enu2, self.e_enu3 = self.efd_geo2enu()  # time clipped data
+        self.b_enu1, self.b_enu2, self.b_enu3 = self.scm_geo2enu()  # same time clipped data
+
+        # get the datetime corresponding to the target fs
+        self.resample_factor = int(self.scm.fs / self.target_fs)
+        interval = 1 / self.target_fs
+        self.datetime = pd.date_range(start=self.scm_datetimes_clip[0],
+                                      periods=int(self.b_enu1.shape[0] * self.b_enu1.shape[1] / self.resample_factor),
+                                      freq=f'{interval}s')  # the common time grid
+        # resample b
+        self.b_resampled_ls = self.b_resampled()
+        # resampe e
+        self.e_datetime = pd.date_range(start=self.efd_datetimes_clip[0],
+                                        periods=int(self.e_enu1.shape[0] * self.e_enu1.shape[1]),
+                                        freq=f'{1 / self.efd.fs}s')  # b_datetime is similar, but I don't need, I just need the resampled b_datetime that is 'self.datetime'
+        self.e_resampled_ls = self.e_resampled()
+        self.data = self.get_data()  # the needed data (no process with nan...)
+        self.data_concat_e0_e1_enu = self.preprocess_data()  # get df concated back and disturb info
+
+
+    def _check_datetimes_clip(self):
+        b_theory_interval = pd.Timedelta((self.scm.row_len + 1) / self.scm.fs, unit="s")
+        e_theory_interval = pd.Timedelta((self.efd.row_len + 1) / self.efd.fs, unit="s")
+        assert all(
+            np.diff(self.scm_datetimes_clip) - b_theory_interval
+            < 10 * pd.Timedelta(1 / self.scm.fs, unit="s")
+        ), "the datetime duration of clipped b minus the theory datetime duration should be less than the set threshold."
+        assert all(
+            np.diff(self.efd_datetimes_clip) - e_theory_interval
+            < pd.Timedelta(1 / self.efd.fs, unit="s")
+        ), "the datetime duration of clipped e minus the theory datetime duration should be less than the set threshold."
+
+    def efd_geo2enu(self)->tuple[DataFrame]:  #todo
+        e_enu1_ls = []
+        e_enu2_ls = []
+        e_enu3_ls = []
+        if len(self.A111_W_clip) == len(self.A112_W_clip) == len(self.A113_W_clip):  # have the same number of rows
+            for (index1, row1), (index2, row2), (index3, row3) in zip(self.A111_W_clip.iterrows(),
+                                                                      self.A112_W_clip.iterrows(),
+                                                                      self.A113_W_clip.iterrows()):
+                assert index1 == index2 == index3, "index not equal"
+                lat = self.efd_geo_clip['lat'][index1]
+                lon = self.efd_geo_clip['lon'][index1]
+                alt = self.efd_geo_clip['alt'][index1] * 1e3
+                e_enu1, e_enu2, e_enu3 = ecef.ecef2enuv(row1, row2, row3, lat, lon, alt)
+                e_enu1_ls.append(e_enu1)
+                e_enu2_ls.append(e_enu2)
+                e_enu3_ls.append(e_enu3)
+        return pd.concat(e_enu1_ls, axis=1).T, pd.concat(e_enu2_ls, axis=1).T, pd.concat(e_enu3_ls, axis=1).T
+
+    def scm_geo2enu(self)->tuple[DataFrame]:
+        b_enu1_ls = []
+        b_enu2_ls = []
+        b_enu3_ls = []
+        if len(self.A231_W_clip) == len(self.A232_W_clip) == len(self.A233_W_clip):  # have the same number of rows
+            for (index1, row1), (index2, row2), (index3, row3) in zip(self.A231_W_clip.iterrows(),
+                                                                      self.A232_W_clip.iterrows(),
+                                                                      self.A233_W_clip.iterrows()):
+                assert index1 == index2 == index3, "index not equal"
+                lat = self.scm_geo_clip['lat'][index1]
+                lon = self.scm_geo_clip['lon'][index1]
+                alt = self.scm_geo_clip['alt'][index1] * 1e3
+                b_enu1, b_enu2, b_enu3 = ecef.ecef2enuv(row1, row2, row3, lat, lon, alt)
+                b_enu1_ls.append(b_enu1)
+                b_enu2_ls.append(b_enu2)
+                b_enu3_ls.append(b_enu3)
+        return pd.concat(b_enu1_ls, axis=1).T, pd.concat(b_enu2_ls, axis=1).T, pd.concat(b_enu3_ls, axis=1).T
+
+    def b_resampled(self):
+        """
+
+        :return: 'b' of zh1 after filter and resample in order.
+        """
+        # low-pass filter: 16hz
+        b,a = customize_butter(fs=self.scm.fs,f_t=self.scm.f_t,f_z=self.scm.f_z,type='lowpass')
+        b_filtered_ls = [filtfilt(b,a,i.values.flatten()) for i in
+                     [self.b_enu1, self.b_enu2, self.b_enu3]]
+        b_resample_ls = []
+        for b in b_filtered_ls:
+            b_resample_ls.append(b[::self.resample_factor])
+        return b_resample_ls
+
+    def e_resampled(self):
+        # scipy
+        old_timestamps = [pd.Timestamp(i).timestamp() for i in self.e_datetime]
+        new_timestamps = [pd.Timestamp(i).timestamp() for i in self.datetime]
+        f_s = [interpolate.interp1d(old_timestamps, i.values.flatten(), fill_value='extrapolate') for i in
+               [self.e_enu1, self.e_enu2, self.e_enu3]]
+        e_resampled_ls = [f(new_timestamps) for f in f_s]
+        return e_resampled_ls  # todo: add index of b and e equal test
+
+    def get_data(self):
+        """
+        concat b and e with base datetimes
+        Returns:
+
+        """
+        data = pd.DataFrame(index=self.datetime)
+        e_columns = ['e_enu1', 'e_enu2', 'e_enu3']
+        b_columns = ['b_enu1', 'b_enu2', 'b_enu3']
+        for column, e in zip(e_columns, self.e_resampled_ls):
+            data[column] = e
+        for column, b in zip(b_columns, self.b_resampled_ls):
+            data[column] = b
+        return data
+
+    def preprocess_data(self,window_seconds=20,center=True,min_periods_seconds=20):
+        # e
+        window = self.target_fs * window_seconds
+        min_periods = self.target_fs * min_periods_seconds
+        e0_columns = ['e0_enu1', 'e0_enu2', 'e0_enu3']  # from mov ave
+        e1_columns = ['e1_enu1', 'e1_enu2', 'e1_enu3']
+        data_dict = {}
+        for (column_name, column_data), (e0_col, e1_col) in zip(self.data[['e_enu1', 'e_enu2', 'e_enu3']].items(),
+                                                                zip(e0_columns, e1_columns)):
+            arr_mov_ave = other.move_average(column_data.values, window=window,center=center,min_periods=min_periods)
+            data_dict[e0_col] = arr_mov_ave
+            data_dict[e1_col] = column_data - arr_mov_ave
+        _1 = pd.DataFrame(data=data_dict)
+        # b
+        # use mov ave, because igfr calculate need time and lat,lon,alt data,but after A111_W type flatten, we don't have the corresponding geo infos.
+        b0_columns = ['b0_enu1', 'b0_enu2', 'b0_enu3']
+        b1_columns = ['b1_enu1', 'b1_enu2', 'b1_enu3']
+        data_dict = {}
+        for (column_name, column_data), (b0_col, b1_col) in zip(self.data[['b_enu1', 'b_enu2', 'b_enu3']].items(),
+                                                                zip(b0_columns, b1_columns)):
+            _ = other.move_average(column_data.values, window=window,center=center,min_periods=min_periods)
+            data_dict[b0_col] = _
+            data_dict[b1_col] = column_data - _
+        _2 = pd.DataFrame(data=data_dict)
+        return pd.concat([self.data, _1,_2], axis=1)
+
+
+
+
+
+def customize_butter(fs, f_t, f_z, type="lowpass"):
+    """
+
+    Args:
+        fs: 采样率 (Hz)
+        f_t: 通带截止频率 (Hz)。低，例如100
+        f_z: 阻带截止频率 (Hz)。高，例如200
+        type: ‘lowpass’, ‘highpass’, ‘bandpass’
+
+    Returns:
+
+    """
+    # 归一化频率
+    wp = f_t / (fs / 2)
+    ws = f_z / (fs / 2)
+
+    # 计算阶数（默认 gpass=3dB, gstop=40dB）
+    order, wn = buttord(wp, ws, 3, 40)
+    b,a = butter(order, wn, type)
+    return b,a
 
 
 def test_split():

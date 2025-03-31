@@ -44,6 +44,7 @@ for file_path in file_paths:
     lats_sou_list.append(lats[sou_slice])
 # success call
 orbit.orbits_hemispheres_projection(
-    lons_nor_list, lats_nor_list, lons_sou_list, lats_sou_list
+    lons_nor_list, lats_nor_list, lons_sou_list, lats_sou_list,if_cfeature=True
 )
+plt.suptitle("SwarmA Multi-Track Northern and Southern Hemisphere Projection Map from 20160229T235551 to 20160302T005246")
 plt.show()

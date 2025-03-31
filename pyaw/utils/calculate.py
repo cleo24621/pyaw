@@ -2,9 +2,7 @@ import numpy as np
 import pandas as pd
 from numpy import ndarray
 
-from pyaw.paras import mu0, me, mp, e, kB
-
-from parameters import PhysicalParameters
+from pyaw.parameters import PhysicalParameters
 
 
 def get_va(B0: float | ndarray | pd.Series, np: float | ndarray | pd.Series) -> float | ndarray | pd.Series:
@@ -15,10 +13,10 @@ def get_va(B0: float | ndarray | pd.Series, np: float | ndarray | pd.Series) -> 
     :return: (m/s)
     """
     # todo:: may need modify because "n" quality problem.
-    return B0 / np.sqrt(mu0 * (mp * np))
+    return B0 / np.sqrt(PhysicalParameters.mu0 * (PhysicalParameters.mp * np))
 
 
-def get_ion_gyrofrequency(B: float | ndarray | pd.Series, mi: float, qi=e):
+def get_ion_gyrofrequency(B: float | ndarray | pd.Series, mi: float, qi=PhysicalParameters.e):
     """
     $\Omega_i$
     :param B: (T SI) measured magnetic field.
@@ -51,7 +49,7 @@ def get_ion_acoustic_gyroradius(Te, mi, Omega_i):
     return np.sqrt(Te * mi) / Omega_i
 
 
-def get_electron_inertial_length(ne, me=me, mu0=mu0, e=e):
+def get_electron_inertial_length(ne, me=PhysicalParameters.me, mu0=PhysicalParameters.mu0, e=PhysicalParameters.e):
     """
     $\lambda_e$
     :param me: (kg)
@@ -61,6 +59,36 @@ def get_electron_inertial_length(ne, me=me, mu0=mu0, e=e):
     :return: (km)
     """
     return np.sqrt(me / (mu0 * ne * e ** 2))
+
+gamma = 3/5  # 绝热指数（通常取 5/3）
+k_b = PhysicalParameters.kB
+mH = PhysicalParameters.mH
+
+def get_c_s(T_i=2000,m_i=mH):
+    """离子声速 $c_s$"""
+    return np.sqrt((gamma * k_b * T_i)/(m_i))
+
+
+def get_Omega_i(B,e=PhysicalParameters.e,m_i=mH):
+    """
+
+    Args:
+        B: 背景磁场
+        e:
+        m_i:
+
+    Returns:
+
+    """
+    return e * B / m_i
+
+def get_rho_s(c_s,Omega_i):
+    """
+    离子声回转半径 $rho_s$
+    Returns:
+
+    """
+    return c_s / Omega_i
 
 
 def get_beta(n: float, T: pd.Series | np.ndarray, B: pd.Series | np.ndarray):
@@ -74,7 +102,7 @@ def get_beta(n: float, T: pd.Series | np.ndarray, B: pd.Series | np.ndarray):
     :param B: measured magnetic field
     :return:
     """
-    return (2 * mu0 * kB * n * T) / (B ** 2)
+    return (2 * PhysicalParameters.mu0 * PhysicalParameters.kB * n * T) / (B ** 2)
 
 
 def get_complex_impedance(mu0, va, Sigma_P, omega, z):
@@ -108,11 +136,3 @@ def E_B_ratio_kaw(va, f, rho_i, rho_s, lambda_e, v_fit):
             1 + (k_transverse ** 2) * (rho_i ** 2))
 
 
-def calculate_upper_bound(va, Sigma_P):
-    mu0 = PhysicalParameters.mu0
-    return mu0 * va ** 2 * Sigma_P
-
-
-def calculate_lower_bound(Sigma_P):
-    mu0 = PhysicalParameters.mu0
-    return 1 / (mu0 * Sigma_P)

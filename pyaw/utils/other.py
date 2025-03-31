@@ -56,6 +56,98 @@ def split_array(array: NDArray, step: int=11) -> List[NDArray]:
     return result
 
 
+def split_array_optimized(array: NDArray, step: int = 11) -> List[NDArray]:
+    """
+    Splits a 1D or 2D NumPy array into segments of a specified step size along the last axis.
+    The last segment will contain any remaining elements/columns, potentially making it
+    larger than 'step'.
+
+    Args:
+        array: The NumPy array (1D or 2D) to split.
+        step: The desired size of each segment along the last axis, except possibly the last.
+               Must be a positive integer.
+
+    Returns:
+        List[NDArray]: A list of NumPy arrays representing the segments. Returns an empty
+                       list if the input array is empty.
+
+    Raises:
+        ValueError: If step is not positive, or if the array dimension is not 1 or 2.
+
+    Examples:
+        >>> arr1d = np.arange(25)
+        >>> split_array_optimized(arr1d, 11)
+        [array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10]), array([11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])] # Segments: 11, 14
+
+        >>> arr1d_short = np.arange(5)
+        >>> split_array_optimized(arr1d_short, 11)
+        [array([0, 1, 2, 3, 4])] # Only one segment
+
+        >>> arr2d = np.arange(20).reshape(2, 10)
+        >>> split_array_optimized(arr2d, 4)
+        [array([[ 0,  1,  2,  3],
+               [10, 11, 12, 13]]), array([[ 4,  5,  6,  7,  8,  9],
+               [14, 15, 16, 17, 18, 19]])] # Segments: 4, 6 columns
+
+        >>> arr2d_exact = np.arange(22).reshape(2, 11)
+        >>> split_array_optimized(arr2d_exact, 11)
+        [array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10],
+               [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]])] # Exactly one segment
+
+        >>> arr_empty = np.array([])
+        >>> split_array_optimized(arr_empty, 5)
+        []
+    """
+    if not isinstance(step, int) or step <= 0:
+        raise ValueError(f"step must be a positive integer, got {step}")
+
+    ndim = array.ndim
+    if ndim == 0 or ndim > 2:
+        raise ValueError(f"Cannot handle arrays with {ndim} dimensions. Only 1D or 2D arrays are supported.")
+
+    # Handle empty array case
+    if array.size == 0:
+        return []
+
+    # Determine the dimension size to split along
+    if ndim == 1:
+        dim_size = array.shape[0]
+        axis = 0
+    else: # ndim == 2
+        dim_size = array.shape[1]
+        axis = 1
+
+    results = []
+    # Calculate the number of full segments *before* the potentially larger last one
+    # We iterate up to the start index of the last segment
+    num_leading_segments = (dim_size - 1) // step
+
+    # Helper to create the correct slice object for 1D or 2D
+    def _get_slice(start, end):
+        if ndim == 1:
+            return slice(start, end)
+        else: # ndim == 2
+            return (slice(None), slice(start, end)) # slice rows, slice columns
+
+    # Add the full leading segments
+    for i in range(num_leading_segments):
+        start = i * step
+        end = start + step
+        results.append(array[_get_slice(start, end)])
+
+    # Add the last segment (contains the last full step + remainder, or just the initial part if array is short)
+    last_segment_start = num_leading_segments * step
+    if last_segment_start < dim_size: # Check if there's anything left to add
+        results.append(array[_get_slice(last_segment_start, None)]) # Slice from start to the end
+
+    # Handle the case where the array was shorter than step initially
+    # In this case, num_leading_segments is 0, the loop doesn't run,
+    # last_segment_start is 0, and the full array is added as the only segment.
+    # If dim_size is exactly a multiple of step, the last segment added
+    # will have exactly 'step' size.
+
+    return results
+
 def get_3arrs(
     array: NDArray,
 ):
@@ -104,28 +196,74 @@ class OutlierData:
         series_copy.loc[diff.abs() > threshold] = np.nan
         return series_copy  # return series_copy  # series_scores = (series - series.mean()) / series.std()  # # 设置阈值，通常 Z 分数大于 3 或小于 -3 的点可以认为是异常点，超过的设置为nan  # threshold = 2  # print(series[np.abs(series_scores) > threshold])  # series[np.abs(series_scores) > threshold] = np.nan  # return series
 
+    # @staticmethod
+    # def set_outliers_nan_std(
+    #     array: NDArray, std_times: float = 1.0, print_: bool = True
+    # ) -> NDArray:
+    #     """
+    #     note: use copy
+    #     Args:
+    #         array: the array to process
+    #         std_times: standard deviation times
+    #         print_: print the outliers or not
+    #
+    #     Returns:
+    #         the array with outliers set to nan
+    #     """
+    #     array_copy = array.copy()
+    #     threshold = std_times * np.std(array_copy)
+    #     bursts = np.abs(array_copy - np.mean(array_copy)) > threshold
+    #     if print_:
+    #         print(len(array_copy[bursts]))
+    #         print(array_copy[bursts])
+    #     array_copy[bursts] = np.nan
+    #     return array_copy
+
     @staticmethod
     def set_outliers_nan_std(
-        array: NDArray, std_times: float = 1.0, print_: bool = True
+            array: NDArray, std_times: float = 1.0, print_: bool = True
     ) -> NDArray:
         """
-        note: use copy
+        Improved outlier detection with NaN handling and zero-std protection
+
         Args:
-            array: the array to process
-            std_times: standard deviation times
-            print_: print the outliers or not
+            array: Input array to process (NaN values will be ignored in calculations)
+            std_times: Multiplier for standard deviation threshold
+            print_: Whether to print outliers information
 
         Returns:
-            the array with outliers set to nan
+            Array with outliers set to NaN (preserves original NaNs)
         """
         array_copy = array.copy()
-        threshold = std_times * np.std(array_copy)
-        bursts = np.abs(array_copy - np.mean(array_copy)) > threshold
+        valid_values = array_copy[~np.isnan(array_copy)]
+
+        # Handle empty array case
+        if len(valid_values) == 0:
+            if print_:
+                print("Warning: Input array contains only NaN values")
+            return array_copy
+
+        mean_val = np.nanmean(array_copy)
+        std_val = np.nanstd(array_copy)
+
+        # Handle zero standard deviation case
+        if np.isclose(std_val, 0):
+            if print_:
+                print(f"No outliers detected - standard deviation is zero (mean: {mean_val:.2f})")
+            return array_copy
+
+        threshold = std_times * std_val
+        deviations = np.abs(array_copy - mean_val)
+        bursts = deviations > threshold
+
         if print_:
-            print(len(array_copy[bursts]))
-            print(array_copy[bursts])
+            outliers = array_copy[bursts & ~np.isnan(array_copy)]
+            print(f"Outliers detected: {len(outliers)}")
+            print(f"Outlier values: {outliers}")
+
         array_copy[bursts] = np.nan
         return array_copy
+
 
 
 def normalize_array(arr: NDArray,
@@ -252,7 +390,7 @@ def interpolate_missing(
 
 
 def move_average(
-    array: NDArray, window: int, center: bool = True, min_periods: int | None = None
+    array: NDArray, window: int, center: bool = True, min_periods: int | None = 1
 ):
     """
     在用于电场和磁场信号时，窗口长度一般对应于事件的长度，如20s。

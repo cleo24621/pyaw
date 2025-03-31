@@ -11,6 +11,6 @@ s3_df_pre = spdf._quality_process(s3_df)
 ssm_df = spdf.r_ssm(fp_ssm)
 ssm_df_pre = spdf.ssm_pre(ssm_df)
 
-clipped_ssm_df = spdf.clip_ssm_by_ssies3(s3_df_pre, ssm_df_pre)
+clipped_ssm_df = spdf._clip_ssm_by_ssies3(s3_df_pre, ssm_df_pre)
 
-s3_ssm_df = spdf.get_s3_ssm(s3_df_pre, clipped_ssm_df)
+s3_ssm_df = spdf._get_s3_ssm(s3_df_pre, clipped_ssm_df)

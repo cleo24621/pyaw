@@ -1,4 +1,6 @@
-from pyaw.utils.calculate import calculate_lower_bound,calculate_upper_bound
+import math
+
+import numpy as np
 
 
 class PhysicalParameters:
@@ -26,6 +28,16 @@ class PhysicalParameters:
     # R_O: relative atomic mass or standard atomic weight: https://en.wikipedia.org/wiki/List_of_chemical_elements
 
 
+def calculate_upper_bound(va, Sigma_P):
+    mu0 = PhysicalParameters.mu0
+    return mu0 * va ** 2 * Sigma_P
+
+
+def calculate_lower_bound(Sigma_P):
+    mu0 = PhysicalParameters.mu0
+    return 1 / (mu0 * Sigma_P)
+
+
 class AlfvenWaveParameters:
 
     general_dynamic_va = 1.4e6  # General dynamic Alfven speed
@@ -40,4 +52,10 @@ class AlfvenWaveParameters:
     general_static_lower_bound = calculate_lower_bound(general_static_Sigma_P)
     general_static_upper_bound = calculate_upper_bound(general_static_va, general_static_Sigma_P)
 
+def calculate_R(v_A,Sigma_P):
+    same = PhysicalParameters.mu0 * v_A * Sigma_P
+    return (1-same)/(1+same)
 
+def calculate_phase_vary_range(R):
+    result_same = np.degrees(math.atan((2*R) / (1-R**2)))
+    return -result_same,result_same

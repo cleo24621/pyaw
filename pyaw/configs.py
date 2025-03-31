@@ -29,6 +29,11 @@ class SwarmConfigs:
                 "SW_EXPT_EFIB_TCT16",
                 "SW_EXPT_EFIC_TCT16",
             ],
+            "EFI_TCT02": [
+                "SW_EXPT_EFIA_TCT02",
+                "SW_EXPT_EFIB_TCT02",
+                "SW_EXPT_EFIC_TCT02",
+            ],
             "MAG": ["SW_OPER_MAGA_LR_1B", "SW_OPER_MAGB_LR_1B", "SW_OPER_MAGC_LR_1B"],
             "MAG_HR": [
                 "SW_OPER_MAGA_HR_1B",

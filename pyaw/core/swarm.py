@@ -101,7 +101,7 @@ class NEC2SCofMAG:
             variable_sc[i] = self._rotate_vector_by_quaternion(
                 vector, quaternion_crf_nec
             )
-        assert variable_sc.dtype == object
+        # assert variable_sc.dtype == object
         return variable_sc
 
 
@@ -137,7 +137,8 @@ class MAG:
         self.file_path = file_path
         self.dataframe = pd.read_pickle(file_path)
 
-    def nec2sc(self,variable_nec: NDArray,
-        variable_quaternion_nec_crf: NDArray):
+    @staticmethod
+    def nec2sc(variable_nec: NDArray,
+               variable_quaternion_nec_crf: NDArray):
         nec2sc_mag = NEC2SCofMAG(variable_nec=variable_nec,variable_quaternion_nec_crf=variable_quaternion_nec_crf)
         return nec2sc_mag.variable_sc

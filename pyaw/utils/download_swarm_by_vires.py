@@ -9,7 +9,7 @@ from pyaw.configs import SwarmConfigs
 
 
 def download_orbit_collection(
-        spacecraft: str, collection: str, orbit_number: int, download_type: str | None
+    spacecraft: str, collection: str, orbit_number: int, download_type: str | None
 ) -> None:
     """
     Download 1 orbit of collection data as a DataFrame and save as '.pkl' file using 'vires' tool.
@@ -50,17 +50,13 @@ def download_orbit_collection(
         store_file_name = Path(
             f"{collection}_{orbit_number}_{start_time.strftime('%Y%m%dT%H%M%S')}_{end_time.strftime('%Y%m%dT%H%M%S')}.pkl"
         )
-        request.set_products(
-            measurements=request.available_measurements(collection)
-        )
+        request.set_products(measurements=request.available_measurements(collection))
     elif download_type == "auxiliaries":
         store_dir_path = Path(f"V:/aw/swarm/vires/auxiliaries/{collection}")
         store_file_name = Path(
             f"aux_{collection}_{orbit_number}_{start_time.strftime('%Y%m%dT%H%M%S')}_{end_time.strftime('%Y%m%dT%H%M%S')}.pkl"
         )
-        request.set_products(
-            auxiliaries=SwarmConfigs.ViresSwarmRequest.auxiliaries
-        )
+        request.set_products(auxiliaries=SwarmConfigs.ViresSwarmRequest.auxiliaries)
     else:
         store_dir_path = Path(f"V:/aw/swarm/vires/igrf/{collection}")
         store_file_name = Path(
@@ -103,7 +99,7 @@ def download_orbit_collection(
         error_dir.mkdir(parents=True, exist_ok=True)
         # 构建错误文件名（覆写模式）
         error_filename = (
-                error_dir / f"error_{start_time.strftime('%Y%m%dT%H%M%S')}.log"
+            error_dir / f"error_{start_time.strftime('%Y%m%dT%H%M%S')}.log"
         )  # 带时间戳的文件名
         # 或者使用固定文件名（每次覆盖）：error_filename = error_dir / "latest_error.log"
         # 将错误信息写入文件（覆写模式）
@@ -113,3 +109,19 @@ def download_orbit_collection(
             )
         # # 可选：保留原有日志记录（如果需要同时记录到日志文件）
         # logging.error(f"Error occurred while downloading orbit collection: {e}", exc_info=True)
+
+
+
+# ---example use---
+spacecraft = "A"
+collection = "SW_EXPT_EFIA_TCT16"
+orbit_nums = range(12728,12839)
+download_types = ["auxiliaries"]
+for orbit_num in orbit_nums:
+    for download_type in download_types:
+        download_orbit_collection(
+            spacecraft=spacecraft,
+            collection=collection,
+            orbit_number=orbit_num,
+            download_type=download_type,
+        )

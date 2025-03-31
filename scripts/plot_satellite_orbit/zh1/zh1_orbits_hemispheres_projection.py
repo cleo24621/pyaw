@@ -27,7 +27,7 @@ for file_name,file_path in zip(file_names,file_paths):
 
     orbit_zh1 = orbit.OrbitZh1(file_name)
     indicator = orbit_zh1.indicator
-    indices = orbit.get_nor_sou_split_indices_zh1(lats, indicator)
+    indices = orbit_zh1.get_nor_sou_split_indices(lats)
 
     nor_slice = slice(*indices[0])
     sou_slice = slice(*indices[1])
@@ -38,6 +38,8 @@ for file_name,file_path in zip(file_names,file_paths):
 
 # success call
 orbit.orbits_hemispheres_projection(
-    lons_nor_list, lats_nor_list, lons_sou_list, lats_sou_list
+    lons_nor_list, lats_nor_list, lons_sou_list, lats_sou_list,if_cfeature=True
 )
+
+plt.suptitle("ZH-1 Multi-Track Northern and Southern Hemisphere Projection Map on 2021-04-01")
 plt.show()
