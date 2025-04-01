@@ -427,27 +427,19 @@ from pyaw.parameters import (
 
 mu0 = PhysicalParameters.mu0
 Sigma_P_dy = 3.0
-Sigma_P_sta = 0.5
 va_dy = 1.4e6
-va_sta = 1.3e6
 
-boundary_l_dy = calculate_lower_bound(Sigma_P_dy)
-boundary_h_dy = calculate_upper_bound(va_dy, Sigma_P_dy)
-print(f"boundary_l_dy*mu0: {boundary_l_dy * mu0}")
-print(f"boundary_h_dy*mu0: {boundary_h_dy * mu0}")
+boundary_l = calculate_lower_bound(Sigma_P_dy)
+boundary_h = calculate_upper_bound(va_dy, Sigma_P_dy)
+print(f"boundary_l*mu0: {boundary_l * mu0}")
+print(f"boundary_h*mu0: {boundary_h * mu0}")
 
-boundary_l_sta = calculate_lower_bound(Sigma_P_sta)
-boundary_h_sta = calculate_upper_bound(va_sta, Sigma_P_sta)
-print(f"boundary_l_sta*mu0: {boundary_l_sta * mu0}")
-print(f"boundary_h_sta*mu0: {boundary_h_sta * mu0}")
 
-reflection_coef_dy = calculate_R(v_A=va_dy, Sigma_P=Sigma_P_dy)
-reflection_coef_sta = calculate_R(v_A=va_sta, Sigma_P=Sigma_P_sta)
+reflection_coef = calculate_R(v_A=va_dy, Sigma_P=Sigma_P_dy)
+print(f"reflection_coef:{reflection_coef}")
 
-phase_vary_range_dy = calculate_phase_vary_range(reflection_coef_dy)
-phase_vary_range_sta = calculate_phase_vary_range(reflection_coef_sta)
-print(f"phase_vary_range_dy: {phase_vary_range_dy}")
-print(f"phase_vary_range_sta: {phase_vary_range_sta}")
+phase_vary_range = calculate_phase_vary_range(reflection_coef)
+print(f"phase_vary_range_dy: {phase_vary_range}")
 
 # %% 2nd plot: define
 nrows, ncols_main = 4, 2
@@ -507,11 +499,11 @@ plot_defs[2][0] = {
     "xlabel": "Frequency (Hz)",
     "ylabel": "ratio",
     "hlines": [
-        {"y": boundary_l_sta},
+        {"y": boundary_l},
         {
-            "y": boundary_h_sta,
+            "y": boundary_h,
         },
-        {"y": va_sta, "label": r"$v_A$"},
+        {"y": va_dy, "label": r"$v_A$"},
     ],
 }
 plot_defs[2][1] = {
@@ -524,9 +516,9 @@ plot_defs[2][1] = {
     "xlabel": "Frequency (Hz)",
     "ylabel": "ratio",
     "hlines": [
-        {"y": boundary_l_dy},
+        {"y": boundary_l},
         {
-            "y": boundary_h_dy,
+            "y": boundary_h,
         },
         {"y": va_dy, "label": r"$v_A$"},
     ],
@@ -541,7 +533,7 @@ plot_defs[3][0] = {
     "xlabel": "Frequency (Hz)",
     "ylabel": "Phase Difference (Degree)",
     "shading": "auto",
-    "hlines": [{"y": phase_vary_range_sta[0]}, {"y": phase_vary_range_sta[1]}],
+    "hlines": [{"y": phase_vary_range[0]}, {"y": phase_vary_range[1]}],
 }
 plot_defs[3][1] = {
     "plot_type": "pcolormesh",
@@ -552,7 +544,7 @@ plot_defs[3][1] = {
     "xlabel": "Frequency (Hz)",
     "ylabel": "Phase Difference (Degree)",
     "shading": "auto",
-    "hlines": [{"y": phase_vary_range_dy[0]}, {"y": phase_vary_range_dy[1]}],
+    "hlines": [{"y": phase_vary_range[0]}, {"y": phase_vary_range[1]}],
 }
 # %% 2nd plot: style
 plt.style.use(
@@ -584,3 +576,8 @@ if save:
     output_path = os.path.join(save_dir, output_filename_png)
     print(f"Saving figure to {output_filename_png} (300 DPI)")
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
+
+#%% if show
+show = False
+if show:
+    plt.show()
