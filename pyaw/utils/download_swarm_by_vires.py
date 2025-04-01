@@ -125,3 +125,4 @@ for orbit_num in orbit_nums:
             orbit_number=orbit_num,
             download_type=download_type,
         )
+        time.sleep(1)
