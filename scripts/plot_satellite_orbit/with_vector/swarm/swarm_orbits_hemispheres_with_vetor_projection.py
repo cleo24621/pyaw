@@ -78,8 +78,22 @@ for file_path_measurement,file_path_igrf in zip(file_paths_measurement,file_path
 
 
 # success call
-orbit.orbits_hemisphere_with_vector_projection(
+fig,ax = orbit.orbits_hemisphere_with_vector_projection(
     lons_nor_list, lats_nor_list,delta_B_E_nor_list,delta_B_N_nor_list,proj_method='NorthPolarStereo',step=10
 )
-plt.suptitle("SwarmA Multi-Track Northern and Southern Hemisphere Projection Map from 20160229T235551 to 20160302T005246")
-plt.show()
+plt.suptitle("Vector SwarmA Multi-Track Northern and Southern Hemisphere Projection Map from 20160229T235551 to 20160302T005246")
+
+#%% save
+save_dir = r"G:\note\毕业论文\images"
+save = True
+if save:
+    output_filename_png = f"SwarmA_Multi_Track_Northern_and_Southern_Hemisphere_Projection_Map_from_20160229T235551_to_20160302T005246.png"
+    output_path = os.path.join(save_dir, output_filename_png)
+    print(f"Saving figure to {output_filename_png} (300 DPI)")
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+
+
+#%% show
+show = True
+if show:
+    plt.show()

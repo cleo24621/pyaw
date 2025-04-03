@@ -56,7 +56,7 @@ def trace_dip(
     )
     loop_num = len(xx) - 1
     if not loop_num > 0:
-        return loop_num, None, None, None, None
+        return loop_num, None, None, None, None,None, None, None
     # GSM -> GEO
     c_back = coord.Coords(
         np.column_stack((xx, yy, zz)),
@@ -68,7 +68,7 @@ def trace_dip(
     trace_max_R = np.max(c_GEO.data[:, 0])  # unit: Re
     alts = (c_GEO.data[:, 0] - 1) * Re  # km
     if alts[-1] > 0:
-        return loop_num, trace_max_R, None, None, None
+        return loop_num, trace_max_R, None, None, None,None, None, None
     lats = c_GEO.data[:, 1]
     lons = c_GEO.data[:, 2]
     # get dip point position
@@ -81,7 +81,7 @@ def trace_dip(
     lons_hemi = lons[lats_hemi_mask]
     idx = np.argmin(np.abs(alts_hemi - alt0))
 
-    return loop_num, trace_max_R, alts_hemi[idx], lats_hemi[idx], lons_hemi[idx]
+    return loop_num, trace_max_R, alts_hemi[idx], lats_hemi[idx], lons_hemi[idx],alts,lats,lons
 
 
 def trace_auro_with_aacgmv2(lat0, lon0, alt0, date, auroral_altitude: float = 110):

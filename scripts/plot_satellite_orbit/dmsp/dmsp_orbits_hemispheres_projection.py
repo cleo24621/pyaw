@@ -52,4 +52,18 @@ orbit.orbits_hemispheres_projection(
     lons_nor_list, lats_nor_list, lons_sou_list, lats_sou_list,if_cfeature=True
 )
 plt.suptitle("DMSP F16 Multi-Track Northern and Southern Hemisphere Projection Map on 20140101")
-plt.show()
+
+#%% save
+save_dir = r"G:\note\毕业论文\images"
+save = True
+if save:
+    output_filename_png = f"DMSP_F16_Multi-Track_Northern_and_Southern_Hemisphere_Projection_Map_on_20140101.png"
+    output_path = os.path.join(save_dir, output_filename_png)
+    print(f"Saving figure to {output_filename_png} (300 DPI)")
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+
+
+#%% show
+show = True
+if show:
+    plt.show()

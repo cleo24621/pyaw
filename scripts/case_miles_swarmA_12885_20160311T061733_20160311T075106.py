@@ -300,7 +300,7 @@ fig, axes = plot_multi_panel(
 )
 
 # %% 1st plot: save fig with high DPI
-save = True
+save = False
 if save:
     output_filename_png = f"1st_plot_Alfven_Wave_Case_Swarm{swarm_type}_from_{start_time}_to_{end_time}.png"
     output_path = os.path.join(save_dir, output_filename_png)
@@ -479,8 +479,8 @@ plot_defs[0][1] = {
 plot_defs[1][0] = {
     "plot_type": "line",
     "x_data": frequencies_psd_sta,
-    "y_data_list": [Pxx_E_north_sta, Pxx_delta_B_E_align_sta],
-    "labels": [r"PSD of $\Delta {B_{East}}$", r"PSD of $E_{North}$"],
+    "y_data_list": [Pxx_delta_B_E_align_sta, Pxx_E_north_sta],
+    "labels": [r"PSD of $E_{North}$", r"PSD of $\Delta {B_{East}}$"],
     "yscale": "log",  # Use log scale
     "title": "PSD of $\Delta {B_{East}}$ and $E_{North}$",
     "xlabel": "Frequency (Hz)",
@@ -489,8 +489,8 @@ plot_defs[1][0] = {
 plot_defs[1][1] = {
     "plot_type": "line",
     "x_data": frequencies_psd_dy,
-    "y_data_list": [Pxx_E_north_dy, Pxx_delta_B_E_align_dy],
-    "labels": [r"PSD of $\Delta {B_{East}}$", r"PSD of $E_{North}$"],
+    "y_data_list": [Pxx_delta_B_E_align_dy, Pxx_E_north_dy],
+    "labels": [r"PSD of $E_{North}$", r"PSD of $\Delta {B_{East}}$"],
     "yscale": "log",  # Use log scale
     "title": "PSD of $\Delta {B_{East}}$ and $E_{North}$",
     "xlabel": "Frequency (Hz)",
@@ -578,9 +578,11 @@ fig, axes = plot_gridded_panels(
 )
 
 # %% 2nd plot: save
-save = True
+save = False
 if save:
     output_filename_png = f"2nd_plot_Alfven_Wave_Case_Swarm{swarm_type}_from_{start_time}_to_{end_time}.png"
     output_path = os.path.join(save_dir, output_filename_png)
     print(f"Saving figure to {output_filename_png} (300 DPI)")
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
+
+plt.show()
