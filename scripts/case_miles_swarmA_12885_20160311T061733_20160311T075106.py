@@ -304,8 +304,8 @@ save = True
 if save:
     output_filename_png = f"1st_plot_Alfven_Wave_Case_Swarm{swarm_type}_from_{start_time}_to_{end_time}.png"
     output_path = os.path.join(save_dir, output_filename_png)
-    print(f"Saving figure to {output_filename_png} (300 DPI)")
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    print(f"Saving figure to {output_filename_png} (300 DPI)")
 
 # %% Region: get clip data
 t_mask_dy = (datetimes >= st_dy) & (datetimes <= et_dy)
@@ -472,7 +472,7 @@ plot_defs[1][0] = {
     "plot_type": "line",
     "x_data": frequencies_psd_sta,
     "y_data_list": [Pxx_E_north_sta, Pxx_delta_B_E_align_sta],
-    "labels": [r"PSD of $\Delta {B_{East}}$", r"PSD of $E_{North}$"],
+    "labels": [r"PSD of $E_{North}$", r"PSD of $\Delta {B_{East}}$"],
     "yscale": "log",  # Use log scale
     "title": "PSD of $\Delta {B_{East}}$ and $E_{North}$",
     "xlabel": "Frequency (Hz)",
@@ -481,8 +481,8 @@ plot_defs[1][0] = {
 plot_defs[1][1] = {
     "plot_type": "line",
     "x_data": frequencies_psd_dy,
-    "y_data_list": [Pxx_E_north_dy, Pxx_delta_B_E_align_dy],
-    "labels": [r"PSD of $\Delta {B_{East}}$", r"PSD of $E_{North}$"],
+    "y_data_list": [Pxx_E_north_dy,Pxx_delta_B_E_align_dy ],
+    "labels": [r"PSD of $E_{North}$", r"PSD of $\Delta {B_{East}}$"],
     "yscale": "log",  # Use log scale
     "title": "PSD of $\Delta {B_{East}}$ and $E_{North}$",
     "xlabel": "Frequency (Hz)",
@@ -574,10 +574,8 @@ save = True
 if save:
     output_filename_png = f"2nd_plot_Alfven_Wave_Case_Swarm{swarm_type}_from_{start_time}_to_{end_time}.png"
     output_path = os.path.join(save_dir, output_filename_png)
-    print(f"Saving figure to {output_filename_png} (300 DPI)")
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    print(f"Saving figure to {output_filename_png} (300 DPI)")
 
 #%% if show
-show = False
-if show:
-    plt.show()
+plt.show()
