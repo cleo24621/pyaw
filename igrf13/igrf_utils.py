@@ -636,7 +636,7 @@ def get_igrf13_b_nec(timestamps, latitudes, longitudes, radiuses, igrf13shc_path
     """
     # Load in the file of coefficients
     igrf = load_shcfile(igrf13shc_path, None)
-    f = interpolate.interp1d(igrf.time, igrf.coeffs, fill_value='extrapolate')
+    f = interpolate.interp1d(igrf.time_trace, igrf.coeffs, fill_value='extrapolate')
     # get the decimal year corresponds to timestamps
     decimal_dates = Time(timestamps).decimalyear
     # get magnetic field vector in NEC coordinates system
