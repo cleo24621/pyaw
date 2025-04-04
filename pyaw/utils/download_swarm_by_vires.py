@@ -117,8 +117,8 @@ spacecraft = "A"
 collection = "SW_EXPT_EFIA_TCT16"
 # collection = "SW_OPER_MAGA_HR_1B"
 assert spacecraft in collection
-orbit_nums = [12847]
-# orbit_nums = range(12847,12853+1)
+# orbit_nums = [12847]
+orbit_nums = range(12895,12901+1)
 download_types = ["auxiliaries"]
 # download_types = ["igrf"]
 for orbit_num in orbit_nums:

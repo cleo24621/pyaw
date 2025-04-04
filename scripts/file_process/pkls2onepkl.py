@@ -11,9 +11,9 @@ index = True  # for save as csv
 # 1. 指定包含所有.pkl文件的目录路径
 file_directory = r'G:\master\pyaw\scripts\results\aw_cases\temp'  # modify
 output_dir = r"G:\master\pyaw\scripts\results\aw_cases\temp"  # modify
-output_file_name = 'combined_dataframe.pkl'     # 合并后的文件名
+output_file_name = 'combined_dataframe_new.pkl'     # 合并后的文件名
 output_path = os.path.join(output_dir, output_file_name)
-csv_file_name = 'combined.csv'
+csv_file_name = 'combined_new.csv'
 csv_file_path = os.path.join(output_dir,csv_file_name)
 
 # 2. 获取所有.pkl文件路径
