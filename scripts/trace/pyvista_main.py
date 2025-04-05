@@ -64,10 +64,10 @@ POLE_MARKER_RADIUS = 0.03
 AURORA_COLOR = "#98c379"
 AURORA_OPACITY = 0.4
 MAX_PLOT_RADIUS = 10.0
-# WINDOW_WIDTH = 1500
-# WINDOW_HEIGHT = 800
-WINDOW_WIDTH = 3840
-WINDOW_HEIGHT = 2160
+WINDOW_WIDTH = 1500
+WINDOW_HEIGHT = 800
+# WINDOW_WIDTH = 3840
+# WINDOW_HEIGHT = 2160
 # WINDOW_WIDTH = 7680
 # WINDOW_HEIGHT = 4320
 IMAGE_SCALE = 4
@@ -355,8 +355,10 @@ def add_fieldlines_and_points(plotter_instance, lines_data, max_radius):
     """Adds magnetic field lines and their endpoints."""
     all_endpoints = []
     # print(f"Processing {len(lines_data)} field line(s)...") # Less verbose
+    segment_line_count = 0
     line_count = 0
     for line_data in lines_data:
+        line_count += 1
         if line_data is None or line_data.shape[0] < 2 or line_data.shape[1] != 3:
             continue
         r = np.linalg.norm(line_data, axis=1)
@@ -365,7 +367,7 @@ def add_fieldlines_and_points(plotter_instance, lines_data, max_radius):
         for start_idx, end_idx in segments:
             segment_data = line_data[start_idx:end_idx]
             if segment_data.shape[0] >= 2:
-                line_count += 1
+                segment_line_count += 1
                 points = segment_data
                 n_points = len(points)
                 lines_array = np.hstack(
@@ -381,6 +383,8 @@ def add_fieldlines_and_points(plotter_instance, lines_data, max_radius):
                 all_endpoints.extend([segment_data[0, :], segment_data[-1, :]])
             elif segment_data.shape[0] == 1:
                 all_endpoints.append(segment_data[0, :])
+    print(f"plot {line_count} magnetic trace lines")
+    print(f"plot {segment_line_count} segment magnetic trace lines")
     if all_endpoints:
         endpoints_coords = np.array(all_endpoints)
         plotter_instance.add_points(
@@ -389,8 +393,9 @@ def add_fieldlines_and_points(plotter_instance, lines_data, max_radius):
             point_size=POINT_SIZE,
             render_points_as_spheres=True,
             opacity=POINT_ALPHA,
-            label=f"Field Line Endpoints ({line_count})",
+            label=f"Field Line Endpoints ({segment_line_count})",
         )
+        print(f"line_count:{segment_line_count}")
     return plotter_instance
 
 
