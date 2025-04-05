@@ -450,27 +450,27 @@ from pyaw.parameters import (
 
 mu0 = PhysicalParameters.mu0
 Sigma_P_dy = 3.0
-Sigma_P_sta = 0.5
+# Sigma_P_sta = 0.5
 va_dy = 1.4e6
-va_sta = 1.3e6
+# va_sta = 1.3e6
 
 boundary_l_dy = calculate_lower_bound(Sigma_P_dy)
 boundary_h_dy = calculate_upper_bound(va_dy, Sigma_P_dy)
 print(f"boundary_l_dy*mu0: {boundary_l_dy * mu0}")
 print(f"boundary_h_dy*mu0: {boundary_h_dy * mu0}")
 
-boundary_l_sta = calculate_lower_bound(Sigma_P_sta)
-boundary_h_sta = calculate_upper_bound(va_sta, Sigma_P_sta)
-print(f"boundary_l_sta*mu0: {boundary_l_sta * mu0}")
-print(f"boundary_h_sta*mu0: {boundary_h_sta * mu0}")
+# boundary_l_sta = calculate_lower_bound(Sigma_P_sta)
+# boundary_h_sta = calculate_upper_bound(va_sta, Sigma_P_sta)
+# print(f"boundary_l_sta*mu0: {boundary_l_sta * mu0}")
+# print(f"boundary_h_sta*mu0: {boundary_h_sta * mu0}")
 
 reflection_coef_dy = calculate_R(v_A=va_dy, Sigma_P=Sigma_P_dy)
-reflection_coef_sta = calculate_R(v_A=va_sta, Sigma_P=Sigma_P_sta)
+# reflection_coef_sta = calculate_R(v_A=va_sta, Sigma_P=Sigma_P_sta)
 
 phase_vary_range_dy = calculate_phase_vary_range(reflection_coef_dy)
-phase_vary_range_sta = calculate_phase_vary_range(reflection_coef_sta)
+# phase_vary_range_sta = calculate_phase_vary_range(reflection_coef_sta)
 print(f"phase_vary_range_dy: {phase_vary_range_dy}")
-print(f"phase_vary_range_sta: {phase_vary_range_sta}")
+# print(f"phase_vary_range_sta: {phase_vary_range_sta}")
 
 #%% get iaw cureve
 from utils import calculate
