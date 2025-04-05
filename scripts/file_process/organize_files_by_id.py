@@ -1,9 +1,14 @@
+"""
+usage: 需新建文件夹将所有需要组织的pkl文件放入，然后再进行处理
+"""
+
 import os
-import re
 import shutil
 
+import re
 
-def organize_files_by_id(source_dir, pattern=r'_(\d{5})_'):
+
+def organize_files_by_id(source_dir, pattern=r"_(\d{5})_"):
     """
     根据文件名中的ID（如12728）将文件分类到对应文件夹
 
@@ -32,5 +37,7 @@ def organize_files_by_id(source_dir, pattern=r'_(\d{5})_'):
 
 
 if __name__ == "__main__":
-    source_directory = r"G:\master\pyaw\scripts\results\aw_cases\archive\temp"  # 替换为你的文件夹路径
+    source_directory = (
+        r"G:\master\pyaw\scripts\results\aw_cases\temp"  # modify
+    )
     organize_files_by_id(source_directory)
