@@ -9,7 +9,7 @@ import pyvista as pv
 #  --- Workflow and Control Flags ---
 INTERACTIVE_MODE = False  # 设置为 True 进行交互式查看，False 进行截图
 CAMERA_POS_FILE = "camera_positions_incremental.json"  # 相机位置文件
-SCREENSHOT_DIR = "screenshot"
+SCREENSHOT_DIR = f"screenshot/{cfg.ORBIT_NUM}"
 
 
 def show_or_screenshot_step(
@@ -74,6 +74,9 @@ def show_or_screenshot_step(
             print(f"Warning: Could not get/save camera position for '{step_key}': {e}")
 
     else:  # Batch mode
+        if not os.path.exists(SCREENSHOT_DIR):
+            os.makedirs(SCREENSHOT_DIR)  # 自动创建不存在的父目录
+            print(f"目录已创建: {SCREENSHOT_DIR}")
         filename = f"{step_key}_screenshot.png".replace(" ", "_").replace(":", "_")
         print(f"\n--- Generating Screenshot: {step_description} ({filename}) ---")
         plotter.add_axes(interactive=False, line_width=2, color=cfg.TEXT_COLOR)

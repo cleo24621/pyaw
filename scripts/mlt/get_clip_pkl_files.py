@@ -6,6 +6,7 @@ usage: 2种模式，一种处理一个轨道的，一种批量处理的（将未
 
 import os
 import re
+import time
 from pathlib import Path
 
 import numpy as np
@@ -58,12 +59,11 @@ BACH_MODE = False
 
 
 if not BACH_MODE:
-    trace_dir = r"G:\master\pyaw\scripts\results\aw_cases\archive\trace_points\pkl\12850"  # modify
+    trace_dir = r"G:\master\pyaw\scripts\results\aw_cases\archive\trace_points\pkl\12834"  # modify
     trace_fns = get_pkl_filenames(trace_dir)
 
-    path = r"V:\aw\swarm\vires\measurements\SW_OPER_MAGA_HR_1B\SW_OPER_MAGA_HR_1B_12850_20160308T234312_20160309T011645.pkl"  # modify
+    path = r"V:\aw\swarm\vires\auxiliaries\SW_OPER_MAGA_HR_1B\aux_SW_OPER_MAGA_HR_1B_12834_20160307T224621_20160308T001954.pkl"  # modify
     df = pd.read_pickle(path)
-    df_pos = df[["Radius", "Latitude", "Longitude"]].copy()
     save_dir = r"G:\master\pyaw\scripts\results\aw_cases"
     for fn in trace_fns:
         # 正则表达式匹配
@@ -74,10 +74,10 @@ if not BACH_MODE:
             start_time = match.group(2)
             end_time = match.group(3)
             print(orbit_num, start_time, end_time)
-            save_fn = f"SW_OPER_MAGA_HR_1B_{orbit_num}_{start_time}_{end_time}.pkl"
+            save_fn = f"aux_SW_OPER_MAGA_HR_1B_{orbit_num}_{start_time}_{end_time}.pkl"
             save_path = os.path.join(save_dir, save_fn)
             if not Path(save_path).exists():
-                df_clip = df_pos[start_time:end_time].copy()
+                df_clip = df[start_time:end_time].copy()
                 df_clip.to_pickle(save_path)
                 print(f"文件已保存: {save_path}")
             else:
@@ -92,7 +92,7 @@ else:
         for entry in Path(trace_dir_root).iterdir()
         if entry.is_dir()
     ]
-    df_path_root = r"V:\aw\swarm\vires\measurements\SW_OPER_MAGA_HR_1B"
+    df_path_root = r"V:\aw\swarm\vires\auxiliaries\SW_OPER_MAGA_HR_1B"
     save_dir = r"G:\master\pyaw\scripts\results\aw_cases"
     pkl_paths = glob.glob(os.path.join(df_path_root, "*.pkl"))
     for trace_dir_name_pair in trace_dir_name_pairs:
@@ -103,7 +103,6 @@ else:
             if trace_dir_name not in pkl_path:  # todo: 也许需要更加严格的判定
                 continue
             df = pd.read_pickle(pkl_path)
-            df_pos = df[["Radius", "Latitude", "Longitude"]].copy()
             for fn in trace_fns:
                 # 正则表达式匹配
                 pattern = r"Swarm[A-Za-z]+_(\d+)_case_(\d{8}T\d{6})_(\d{8}T\d{6})\.pkl"
@@ -114,13 +113,14 @@ else:
                     end_time = match.group(3)
                     print(orbit_num, start_time, end_time)
                     save_fn = (
-                        f"SW_OPER_MAGA_HR_1B_{orbit_num}_{start_time}_{end_time}.pkl"
+                        f"aux_SW_OPER_MAGA_HR_1B_{orbit_num}_{start_time}_{end_time}.pkl"
                     )
                     save_path = os.path.join(save_dir, save_fn)
                     if not Path(save_path).exists():
-                        df_clip = df_pos[start_time:end_time].copy()
+                        df_clip = df[start_time:end_time].copy()
                         df_clip.to_pickle(save_path)
                         print(f"文件已保存: {save_path}")
+                        time.sleep(0.5)
                     else:
                         print(f"文件已存在，跳过: {save_path}")
 

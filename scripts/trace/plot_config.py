@@ -33,14 +33,16 @@ Re_km = 6371.2
 SWARM_RADIUS = 6816838.5 * 1e-3  # km
 SWARM_ALTITUDE = SWARM_RADIUS - Re_km  # km
 EARTH_TEXTURE_PATH = "eo_base_2020_clean_3600x1800.png"
+ORBIT_NUM = 12728  # modify
 TRACE_FILE_DIR = (
-    r"G:\master\pyaw\scripts\results\aw_cases\archive\trace_points\pkl\12738"
+    rf"G:\master\pyaw\scripts\results\aw_cases\archive\trace_points\pkl\{ORBIT_NUM}"
 )
 TRACE_FILE_PATHS = glob.glob(os.path.join(TRACE_FILE_DIR, "*.pkl"))
 TRACE_FILE_NAMES = [os.path.basename(path) for path in TRACE_FILE_PATHS]
-SATELLITE_DIR = r"G:\master\pyaw\scripts\results\aw_cases\archive\orbits\12738"
+SATELLITE_DIR = rf"G:\master\pyaw\scripts\results\aw_cases\archive\orbits\{ORBIT_NUM}"
 SATELLITE_PATHS = glob.glob(os.path.join(SATELLITE_DIR, "*.pkl"))
-SATELLITE_MARKER_INDICES = [[0, -1]] * len(SATELLITE_PATHS)  # 确保与路径数量一致
+# SATELLITE_MARKER_INDICES = [[0, -1]] * len(SATELLITE_PATHS)  # 确保与路径数量一致
+SATELLITE_MARKER_INDICES = [[]] * len(SATELLITE_PATHS)  # 确保与路径数量一致
 
 # --- Style Settings ---
 FIG_BG_COLOR = "#282c34"
@@ -51,16 +53,16 @@ EARTH_SPECULAR = 0.2
 EARTH_SPECULAR_POWER = 10
 EARTH_SMOOTH_SHADING = True
 FIELD_LINE_COLOR = "#ff0000"
-FIELD_LINE_OPACITY = 0.65
-FIELD_LINE_WIDTH = 1
+FIELD_LINE_OPACITY = 1
+FIELD_LINE_WIDTH = 5
 # Field Line Points
 POINT_COLOR = "#ffffff"  # 颜色：磁力线端点的颜色
-POINT_SIZE = 5  # 大小：磁力线端点的尺寸 (像素或点单位，取决于后端)
+POINT_SIZE = 10  # 大小：磁力线端点的尺寸 (像素或点单位，取决于后端)
 POINT_ALPHA = 0.9  # 透明度：磁力线端点的不透明度 (0=透明, 1=不透明)
 #
 SAT_TRACK_COLOR = "#56b6c2"
-SAT_TRACK_WIDTH = 2  # 减小一点宽度以便看清增量
-SAT_TRACK_OPACITY = 0.5
+SAT_TRACK_WIDTH = 50  # 减小一点宽度以便看清增量
+SAT_TRACK_OPACITY = 1
 SAT_POS_COLOR = "#e06c75"
 SAT_POS_SIZE = 8
 POLE_MARKER_COLOR = "#ffffff"
@@ -69,8 +71,10 @@ PLOT_AURORA = False
 AURORA_COLOR = "#98c379"
 AURORA_OPACITY = 0.4
 MAX_PLOT_RADIUS = 10.0  # 保持一致
-WINDOW_WIDTH = 1500
-WINDOW_HEIGHT = 800
+# WINDOW_WIDTH = 1500
+# WINDOW_HEIGHT = 800
+WINDOW_WIDTH = 2000
+WINDOW_HEIGHT = 1000
 IMAGE_SCALE = 2  # 截图时可以适当调小以加快速度
 
 DISTANCE_THRESHOLD = 0.01  # (in Re) Adjust this threshold as needed!
