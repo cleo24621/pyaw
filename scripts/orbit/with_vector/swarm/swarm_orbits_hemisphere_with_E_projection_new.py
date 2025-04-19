@@ -15,7 +15,7 @@ from pyaw.utils.other import get_3arrs, OutlierData, interpolate_missing
 from utils import coordinate
 
 orbit_num_list = [12728,12729,12738,12739,12740,12741,12742,12743,12744,12753,12753,12754,12755,12756,12757,12758,12759]
-file_names_mag = [
+file_names_tct6 = [
     "SW_EXPT_EFIA_TCT16_12728_20160301T012924_20160301T030258.pkl",
     "SW_EXPT_EFIA_TCT16_12729_20160301T030258_20160301T043631.pkl",
     "SW_EXPT_EFIA_TCT16_12738_20160301T170459_20160301T183832.pkl",
@@ -61,7 +61,7 @@ data_dir_path = ProjectConfigs.data_dir_path
 
 file_paths_measurement = [
     os.path.join(data_dir_path, file_name_measurement)
-    for file_name_measurement in file_names_mag
+    for file_name_measurement in file_names_tct6
 ]
 
 # for static info
@@ -288,9 +288,11 @@ fig, axes = orbit.plot_dual_hemisphere_orbits(
 
 # %% save
 save_dir = r"G:\note\毕业论文\images"
-save = True
+save = False
 if save:
     output_filename_png = f"The_Hemisphere_Projection_of_SwarmA_Electric_Field.png"
     output_path = os.path.join(save_dir, output_filename_png)
     print(f"Saving figure to {output_filename_png} (300 DPI)")
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
+
+plt.show()

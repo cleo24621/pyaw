@@ -1,3 +1,5 @@
+import pathlib
+
 import plot_config as cfg
 
 import os
@@ -7,8 +9,8 @@ import pyvista as pv
 
 
 #  --- Workflow and Control Flags ---
-INTERACTIVE_MODE = False  # 设置为 True 进行交互式查看，False 进行截图
-CAMERA_POS_FILE = "camera_positions_incremental.json"  # 相机位置文件
+INTERACTIVE_MODE = True  # 设置为 True 进行交互式查看，False 进行截图
+CAMERA_POS_FILE = f"camera_positions/{cfg.ORBIT_NUM}/camera_positions_incremental.json"  # 相机位置文件
 SCREENSHOT_DIR = f"screenshot/{cfg.ORBIT_NUM}"
 
 
@@ -279,11 +281,30 @@ print("===== Completed Step 2 (Final view is the last track step) =====")
 # --- 保存相机位置 ---
 if INTERACTIVE_MODE and camera_positions:
     try:
+        # 将字符串路径转换为 Path 对象
+        file_path = pathlib.Path(CAMERA_POS_FILE)
+
+        # 获取父目录的 Path 对象
+        parent_dir = file_path.parent
+
+        # 创建父目录，包括所有必要的中间目录
+        # parents=True: 创建所有父目录
+        # exist_ok=True: 如果目录已存在，不引发错误
+        parent_dir.mkdir(parents=True, exist_ok=True)
+
         # camera_positions 字典的值已经是 list of lists
-        with open(CAMERA_POS_FILE, "w") as f:
+        # 使用 Path 对象直接打开文件
+        with open(file_path, "w") as f:
             json.dump(camera_positions, f, indent=4)
-        print(f"\nSaved {len(camera_positions)} camera positions to {CAMERA_POS_FILE}")
-    except Exception as e:
-        print(f"Warning: Could not save camera positions: {e}")
+
+        print(f"\nSaved {len(camera_positions)} camera positions to {file_path}")  # 可以直接打印 Path 对象
+
+    # 添加基本的错误处理
+    except OSError as e:
+        print(f"Error: Could not create directory or write file '{CAMERA_POS_FILE}'. Reason: {e}")
+    except TypeError as e:
+        print(f"Error: Data in 'camera_positions' is not JSON serializable. Reason: {e}")
+    except Exception as e:  # 捕获其他意外错误
+        print(f"An unexpected error occurred: {e}")
 
 print("\n增量绘图完成 (最终图像为最后一次卫星轨迹添加步骤).")

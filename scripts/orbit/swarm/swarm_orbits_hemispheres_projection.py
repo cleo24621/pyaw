@@ -52,7 +52,7 @@ plt.suptitle("SwarmA Multi-Track Northern and Southern Hemisphere Projection Map
 
 #%% save
 save_dir = r"G:\note\毕业论文\images"
-save = True
+save = False
 if save:
     output_filename_png = f"SwarmA_Multi_Track_Northern_and_Southern_Hemisphere_Projection_Map_from_20160229T235551_to_20160302T005246.png"
     output_path = os.path.join(save_dir, output_filename_png)

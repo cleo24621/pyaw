@@ -478,15 +478,19 @@ from utils import calculate
 def get_iaw_ratio_curve(k_perp:NDArray,va:float,lambda_e=float,rho_s=float):
     return va * np.sqrt((1 + k_perp**2 * lambda_e**2) * (1 + k_perp**2 * rho_s**2))
 
+# def get_iaw_ratio_curve(k_perp:NDArray,va:float,lambda_e=float):
+#     return va * np.sqrt(1 + k_perp**2 * lambda_e**2)
+
 k_perp = 2 * np.pi * frequencies_psd_dy / Vsat_mean
 lambda_e = calculate.get_electron_inertial_length(ne=2e6)
 
-c_s = calculate.get_c_s(T_i=2000)
-Omega_i = calculate.get_Omega_i(B_strength_align_dy_value)
+# c_s = calculate.get_c_s(T_e=0.1)  # assume T=T_e=T_i; ions most are H ions.
+c_s = calculate.get_c_s(T_e=2000)  # assume T=T_e=T_i; ions most are H ions.
+Omega_i = calculate.get_Omega_i(B_strength_align_dy_value*1e-9)  # transform nT to T
 rho_s = calculate.get_rho_s(c_s=c_s,Omega_i=Omega_i)
 
 iaw_ratio_values = get_iaw_ratio_curve(k_perp=k_perp,va=va_dy,lambda_e=lambda_e,rho_s=rho_s)
-# iaw_ratio_values = iaw_ratio_values
+# iaw_ratio_values = get_iaw_ratio_curve(k_perp=k_perp,va=va_dy,lambda_e=lambda_e)
 iaw_ratio_values = iaw_ratio_values * 1e-1  # 模拟
 
 #%% plot
@@ -507,9 +511,11 @@ plt.ylabel("Ratio")
 plt.legend()
 
 #%% save
-save = True
+save = False
 if save:
     output_filename_png = f"Inertial_Alfven_Wave_Case_Swarm{swarm_type}_from_{start_time}_to_{end_time}.png"
     output_path = os.path.join(save_dir, output_filename_png)
     print(f"Saving figure to {output_filename_png} (300 DPI)")
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
+
+plt.show()

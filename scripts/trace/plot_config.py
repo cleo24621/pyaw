@@ -33,7 +33,7 @@ Re_km = 6371.2
 SWARM_RADIUS = 6816838.5 * 1e-3  # km
 SWARM_ALTITUDE = SWARM_RADIUS - Re_km  # km
 EARTH_TEXTURE_PATH = "eo_base_2020_clean_3600x1800.png"
-ORBIT_NUM = 12728  # modify
+ORBIT_NUM = 12738  # modify
 TRACE_FILE_DIR = (
     rf"G:\master\pyaw\scripts\results\aw_cases\archive\trace_points\pkl\{ORBIT_NUM}"
 )
@@ -57,7 +57,7 @@ FIELD_LINE_OPACITY = 1
 FIELD_LINE_WIDTH = 5
 # Field Line Points
 POINT_COLOR = "#ffffff"  # 颜色：磁力线端点的颜色
-POINT_SIZE = 10  # 大小：磁力线端点的尺寸 (像素或点单位，取决于后端)
+POINT_SIZE = 15  # 大小：磁力线端点的尺寸 (像素或点单位，取决于后端)
 POINT_ALPHA = 0.9  # 透明度：磁力线端点的不透明度 (0=透明, 1=不透明)
 #
 SAT_TRACK_COLOR = "#56b6c2"
@@ -71,11 +71,11 @@ PLOT_AURORA = False
 AURORA_COLOR = "#98c379"
 AURORA_OPACITY = 0.4
 MAX_PLOT_RADIUS = 10.0  # 保持一致
-# WINDOW_WIDTH = 1500
-# WINDOW_HEIGHT = 800
-WINDOW_WIDTH = 2000
-WINDOW_HEIGHT = 1000
-IMAGE_SCALE = 2  # 截图时可以适当调小以加快速度
+WINDOW_WIDTH = 1500
+WINDOW_HEIGHT = 800
+# WINDOW_WIDTH = 2000
+# WINDOW_HEIGHT = 1000
+IMAGE_SCALE = 10  # 截图时可以适当调小以加快速度
 
 DISTANCE_THRESHOLD = 0.01  # (in Re) Adjust this threshold as needed!
 REMOVE_OVERLAPPING = False  # Set to True to remove duplicates, False to just warn
@@ -534,7 +534,7 @@ def add_earth_features(plotter_instance):
             [(0, 0, R_E * 1.0)],
             ["N"],
             point_size=0.1,
-            font_size=15,
+            font_size=20,
             text_color=TEXT_COLOR,
             shape=None,
             name="north_label",
@@ -544,7 +544,7 @@ def add_earth_features(plotter_instance):
             [(0, 0, -R_E * 1.0)],
             ["S"],
             point_size=0.1,
-            font_size=15,
+            font_size=20,
             text_color=TEXT_COLOR,
             shape=None,
             name="south_label",

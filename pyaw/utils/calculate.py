@@ -64,9 +64,14 @@ gamma = 3/5  # 绝热指数（通常取 5/3）
 k_b = PhysicalParameters.kB
 mH = PhysicalParameters.mH
 
-def get_c_s(T_i=2000,m_i=mH):
-    """离子声速 $c_s$"""
-    return np.sqrt((gamma * k_b * T_i)/(m_i))
+def get_c_s(T_e,k_b=k_b,m_i=mH):
+    """离子声速 $c_s$
+    T_e: unit is eV not K
+
+    """
+    # return np.sqrt((gamma * k_b * T_i)/(m_i))  # wrong
+    # return np.sqrt((T_e)/(m_i))
+    return np.sqrt((k_b*T_e)/(m_i))
 
 
 def get_Omega_i(B,e=PhysicalParameters.e,m_i=mH):
