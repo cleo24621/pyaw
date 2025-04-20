@@ -111,22 +111,30 @@ def download_orbit_collection(
         # logging.error(f"Error occurred while downloading orbit collection: {e}", exc_info=True)
 
 
+if __name__ == "__main__":
+    satellite = "A"
 
-# ---example use---
-spacecraft = "A"
-collection = "SW_EXPT_EFIA_TCT16"
-# collection = "SW_OPER_MAGA_HR_1B"
-assert spacecraft in collection
-# orbit_nums = [12847]
-orbit_nums = range(12895,12901+1)
-download_types = ["auxiliaries"]
-# download_types = ["igrf"]
-for orbit_num in orbit_nums:
-    for download_type in download_types:
-        download_orbit_collection(
-            spacecraft=spacecraft,
-            collection=collection,
-            orbit_number=orbit_num,
-            download_type=download_type,
-        )
-        time.sleep(1)
+    # collection = "SW_EXPT_EFIA_TCT16"
+    # collection = "SW_OPER_MAGA_HR_1B"
+    # collection = "SW_PREL_EFIAIDM_2_"
+    # collection = "SW_OPER_EFIA_LP_1B"
+    collection = "SW_OPER_EFIATIE_2_"
+
+    assert satellite in collection
+
+    orbit_nums = [12885]
+    # orbit_nums = range(12895,12901+1)
+
+    download_types = ["measurements"]
+    # download_types = ["auxiliaries"]
+    # download_types = ["igrf"]
+
+    for orbit_num in orbit_nums:
+        for download_type in download_types:
+            download_orbit_collection(
+                spacecraft=satellite,
+                collection=collection,
+                orbit_number=orbit_num,
+                download_type=download_type,
+            )
+            time.sleep(1)
