@@ -279,7 +279,7 @@ subplot_defs[-1]["hlines"] = [{"y": 0.5, "color": "magenta", "linestyle": "-."}]
 aux_data_for_x = {"Lat": latitudes, "MLT": mlts}
 
 
-# %% 1st plot: Call the function to plot
+# 1st plot: Call the function to plot
 # fig, axes = plot_multi_panel(
 #     subplot_definitions=subplot_defs,
 #     x_datetime_ref=datetimes,  # Reference times for aux data (note that lats,mlts based on datetimes not tsdt64)
