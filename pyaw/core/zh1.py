@@ -693,7 +693,7 @@ def test_split():
     import os
     from core import zh1
 
-    data_dir_path = "G:\master\pyaw\data"
+    data_dir_path = r"G:\master\pyaw\data"
     # file_name = "CSES_01_SCM_1_L02_A2_096790_20191031_233256_20191101_000821_000.h5"
     file_name = "CSES_01_SCM_1_L02_A2_175381_20210401_012104_20210401_015640_000.h5"
     file_path = os.path.join(data_dir_path, file_name)

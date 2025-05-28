@@ -6,18 +6,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 from matplotlib.gridspec import GridSpec
-from nptyping import NDArray, Datetime64, Float64
+from typing import TypeAlias, TypeVar
+from numpy.typing import NDArray
 from typing import Optional, Tuple
 
+_Shape = TypeVar("_Shape")
+DateTime64Array: TypeAlias = np.ndarray[_Shape, np.dtype[np.datetime64]]
 
 def plot_multi_parameter_xticks(
-        timestamps: NDArray[Datetime64],
-        values: NDArray[Float64],
-        latitudes: NDArray[Float64],
-        qdlats: NDArray[Float64],
-        mlts: NDArray[Float64],
+        timestamps: DateTime64Array,
+        values: NDArray,
+        latitudes: NDArray,
+        qdlats: NDArray,
+        mlts: NDArray,
         step: int = 20000,
-        highlight_times: Optional[list[Datetime64]] = None,
+        highlight_times: Optional[list[np.datetime64]] = None,
         highlight_color: str = "r",
         figsize: Tuple[int, int] = (18, 8)
 ) -> Tuple[plt.Figure, plt.Axes]:

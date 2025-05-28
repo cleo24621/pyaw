@@ -8,13 +8,6 @@ from scipy.signal import spectrogram
 
 from configs import ProjectConfigs
 from core import dmsp
-from pyaw.parameters import (
-    PhysicalParameters,
-    calculate_lower_bound,
-    calculate_upper_bound,
-    calculate_R,
-    calculate_phase_vary_range,
-)
 from pyaw.utils import spectral
 from pyaw.utils.plot import plot_multi_panel, plot_gridded_panels
 from utils import histogram2d
@@ -27,7 +20,7 @@ show = False
 # %% basic parameters
 fs = 1
 window = "hann"
-save_dir = r"G:\note\毕业论文\images"
+save_dir = r"G:\master\pyaw\scripts\results\aw_cases\dmsp"
 
 # %% file paths
 data_dir_path = ProjectConfigs.data_dir_path
@@ -111,9 +104,10 @@ except Exception as e:
 # %% preset region parameters for plot annoatations, labels and so on
 st_dy = np.datetime64("2014-01-01T01:49:00")
 et_dy = np.datetime64("2014-01-01T01:51:00")
-# st_sta = np.datetime64("2014-01-01T01:56:00")  # modify
 st_sta = np.datetime64("2014-01-01T01:52:00")  # modify
 et_sta = np.datetime64("2014-01-01T01:54:00")
+# st_sta = np.datetime64("2014-01-01T01:54:00")
+# et_sta = np.datetime64("2014-01-01T01:56:00")
 # et_sta = np.datetime64("2014-01-01T01:58:00")
 # %% 1st plot: define
 
@@ -361,20 +355,25 @@ eb_ratio_psd_dy = (Pxx_E_sc1_dy / Pxx_b_sc2_dy) * 1e-3 * 1e9  # transform unit
 eb_ratio_psd_sta = (Pxx_E_sc1_sta / Pxx_b_sc2_sta) * 1e-3 * 1e9
 
 # %% Region: lower and upper bound and other parameters
+from pyaw.parameters import VACUUM_PERMEABILITY,Alfven
 
-mu0 = PhysicalParameters.mu0
-Sigma_P_dy = 3.0
-va_dy = 1.4e6
+pedersen_conductance_dynamic = 3.0
+alfven_velocity_dynamic = 1.4e6
 
-boundary_l = calculate_lower_bound(Sigma_P_dy)
-boundary_h = calculate_upper_bound(va_dy, Sigma_P_dy)
-print(f"boundary_l_dy*mu0: {boundary_l * mu0}")
-print(f"boundary_h_dy*mu0: {boundary_h * mu0}")
+alfven = Alfven()
 
-reflection_coef = calculate_R(v_A=va_dy, Sigma_P=Sigma_P_dy)
-print(f"reflection_coef:{reflection_coef}")
+boundary_l = alfven.calculate_lower_boundary(pedersen_conductance=pedersen_conductance_dynamic)
+boundary_h = alfven.calculate_upper_boundary(alfven_velocity=alfven_velocity_dynamic, pedersen_conductance=pedersen_conductance_dynamic)
+print(f"boundary_l_dy*mu0: {boundary_l * VACUUM_PERMEABILITY}")
+print(f"boundary_h_dy*VACUUM_PERMEABILITY: {boundary_h * VACUUM_PERMEABILITY}")
 
-phase_vary_range = calculate_phase_vary_range(reflection_coef)
+alfven_impedance = alfven.calculate_alfven_impedance(alfven_velocity=alfven_velocity_dynamic)
+alfven_admittance = alfven.calculate_alfven_admittance(alfven_impedance=alfven_impedance)
+
+ionospheric_reflection_coefficient = alfven.calculate_ionospheric_reflection_coefficient(alfven_admittance=alfven_admittance, pedersen_impedance=pedersen_conductance_dynamic)
+print(f"reflection_coef:{ionospheric_reflection_coefficient}")
+
+phase_vary_range = alfven.calculate_electric_magnetic_field_phase_difference_range(ionospheric_reflection_coefficient)
 print(f"phase_vary_range: {phase_vary_range}")
 
 # %% 2nd plot: define
@@ -440,7 +439,7 @@ plot_defs[2][0] = {
         {
             "y": boundary_h,
         },
-        {"y": va_dy, "label": r"$v_A$"},
+        {"y": alfven_velocity_dynamic, "label": r"$v_A$"},
     ],
 }
 plot_defs[2][1] = {
@@ -457,7 +456,7 @@ plot_defs[2][1] = {
         {
             "y": boundary_h,
         },
-        {"y": va_dy, "label": r"$v_A$"},
+        {"y": alfven_velocity_dynamic, "label": r"$v_A$"},
     ],
 }
 # Row 3
@@ -506,6 +505,7 @@ fig, axes = plot_gridded_panels(
     legend_fontsize=9,
     annotation_fontsize=8,
     panel_label_fontsize=11,
+    rotate_xticklabels=True
 )
 
 # %% 2nd plot: save

@@ -12,7 +12,7 @@
 import numpy as np
 import pandas as pd
 import pywt
-from nptyping import NDArray
+from numpy.typing import NDArray
 from typing import List, Optional
 
 from scipy.interpolate import interpolate, interp1d

@@ -35,11 +35,11 @@ SWARM_ALTITUDE = SWARM_RADIUS - Re_km  # km
 EARTH_TEXTURE_PATH = "eo_base_2020_clean_3600x1800.png"
 ORBIT_NUM = 12738  # modify
 TRACE_FILE_DIR = (
-    rf"G:\master\pyaw\scripts\results\aw_cases\archive\trace_points\pkl\{ORBIT_NUM}"
+    f"scripts/results/aw_cases/archive/trace_points/pkl/{ORBIT_NUM}"
 )
 TRACE_FILE_PATHS = glob.glob(os.path.join(TRACE_FILE_DIR, "*.pkl"))
 TRACE_FILE_NAMES = [os.path.basename(path) for path in TRACE_FILE_PATHS]
-SATELLITE_DIR = rf"G:\master\pyaw\scripts\results\aw_cases\archive\orbits\{ORBIT_NUM}"
+SATELLITE_DIR = rf"scripts\results\aw_cases\archive\orbits\{ORBIT_NUM}"
 SATELLITE_PATHS = glob.glob(os.path.join(SATELLITE_DIR, "*.pkl"))
 # SATELLITE_MARKER_INDICES = [[0, -1]] * len(SATELLITE_PATHS)  # 确保与路径数量一致
 SATELLITE_MARKER_INDICES = [[]] * len(SATELLITE_PATHS)  # 确保与路径数量一致

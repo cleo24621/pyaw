@@ -3,7 +3,7 @@ from cartopy import crs as ccrs
 import cartopy.feature as cfeature # Moved import here for clarity
 from matplotlib import pyplot as plt, path as mpath
 from matplotlib.axes import Axes
-from nptyping import NDArray
+from numpy.typing import NDArray
 
 
 def get_nor_sou_split_indices_swarm_dmsp(latitudes: NDArray):

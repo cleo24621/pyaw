@@ -278,9 +278,9 @@ def get_coherence_optimized(
 
 
 def get_coherence_optimized_no_trunc(
-    Zxx1: NDArray[np.complex_],
-    Zxx2: NDArray[np.complex_],
-    cpsd_12: NDArray[np.complex_],
+    Zxx1: NDArray,
+    Zxx2: NDArray,
+    cpsd_12: NDArray,
     step: int = 11
 ) -> NDArray[np.float64]:
     """
@@ -398,8 +398,8 @@ def get_coherence_optimized_no_trunc(
 
 def calculate_segmented_coherence(
     datetimes: NDArray[np.datetime64],
-    x: NDArray[np.float_],
-    y: NDArray[np.float_],
+    x: NDArray[np.float64],
+    y: NDArray[np.float64],
     fs: float,
     segment_length_sec: float = None, # Define segment length in seconds
     nperseg: int = None,          # OR define segment length by samples
@@ -560,8 +560,8 @@ def calculate_segmented_coherence(
 
 def calculate_segmented_complex_coherency( # Renamed function
     datetimes: NDArray[np.datetime64],
-    x: NDArray[np.float_],
-    y: NDArray[np.float_],
+    x: NDArray[np.float64],
+    y: NDArray[np.float64],
     fs: float,
     segment_length_sec: float = None,
     nperseg: int = None,

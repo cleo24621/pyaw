@@ -1154,41 +1154,43 @@ DEFAULT_LINE_COLORS = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
 
 def plot_gridded_panels(
-    plot_definitions: List[List[Optional[Dict[str, Any]]]],
-    nrows: int = 4,
-    ncols_main: int = 2,
-    add_shared_cbar: bool = True,
-    # --- Layout ---
-    figsize: Optional[Tuple[float, float]] = None,
-    main_col_ratio: float = 10,
-    cbar_col_ratio: float = 0.5,
-    layout_engine: str = "constrained",
-    # --- Shared Colorbar ---
-    shared_cbar_label: str = "Value",
-    global_cmap: str = "viridis",
-    use_shared_clims: bool = True,
-    clim_percentiles: Tuple[float, float] = (1.0, 99.0),
-    global_vmin: Optional[float] = None,
-    global_vmax: Optional[float] = None,
-    # --- General Plotting ---
-    use_grid: bool = True,
-    figure_title: Optional[str] = None,
-    # --- Font Size Control ---
-    base_fontsize: float = 10,
-    title_fontsize: float = 12,
-    label_fontsize: float = 10,
-    tick_label_fontsize: float = 9,
-    legend_fontsize: float = 9,
-    annotation_fontsize: float = 8,
-    panel_label_fontsize: float = 12,
-    # --- Annotation Style Defaults ---
-    vline_color: str = "red",
-    vline_linestyle: str = "--",
-    vline_label_color: str = "red",
-    hline_color: str = "red",
-    hline_linestyle: str = ":",
-    hline_label_color: str = "red",
-    block_label_color: str = None,  # None uses block color
+        plot_definitions: List[List[Optional[Dict[str, Any]]]],
+        nrows: int = 4,
+        ncols_main: int = 2,
+        add_shared_cbar: bool = True,
+        # --- Layout ---
+        figsize: Optional[Tuple[float, float]] = None,
+        main_col_ratio: float = 10,
+        cbar_col_ratio: float = 0.5,
+        layout_engine: str = "constrained",
+        # --- Shared Colorbar ---
+        shared_cbar_label: str = "Value",
+        global_cmap: str = "viridis",
+        use_shared_clims: bool = True,
+        clim_percentiles: Tuple[float, float] = (1.0, 99.0),
+        global_vmin: Optional[float] = None,
+        global_vmax: Optional[float] = None,
+        # --- General Plotting ---
+        use_grid: bool = True,
+        figure_title: Optional[str] = None,
+        # --- Font Size Control ---
+        base_fontsize: float = 10,
+        title_fontsize: float = 12,
+        label_fontsize: float = 10,
+        tick_label_fontsize: float = 9,
+        legend_fontsize: float = 9,
+        annotation_fontsize: float = 8,
+        panel_label_fontsize: float = 12,
+        # --- Annotation Style Defaults ---
+        vline_color: str = "red",
+        vline_linestyle: str = "--",
+        vline_label_color: str = "red",
+        hline_color: str = "red",
+        hline_linestyle: str = ":",
+        hline_label_color: str = "red",
+        block_label_color: str = None,  # None uses block color
+        # --- Axis Label Control ---
+        rotate_xticklabels: bool = False  # Add control for x-axis label rotation
 ):
     """
     Creates a grid of plots supporting various types, annotations per subplot,
@@ -1198,7 +1200,7 @@ def plot_gridded_panels(
         plot_definitions (List[List[Optional[Dict]]]): Defines plots per cell. Dict keys:
             - Common: 'plot_type' ('line' or 'pcolormesh'), 'title', 'xlabel', 'ylabel'.
             - For 'line':
-                'x_data' (NDArray), 'y_data_list' (List[NDArray]),
+                'x_data' (NDArray), 'y_data_list' (List[NDArray]), 
                 'yscale' (str, optional): 'linear' (default) or 'log'.
                 'labels', 'colors', 'linewidths' (optional lists or single value).
             - For 'pcolormesh':
@@ -1216,6 +1218,7 @@ def plot_gridded_panels(
         figure_title: Overall figure title.
         title_fontsize ... panel_label_fontsize: Font size controls.
         vline_..., hline_..., block_...: Annotation style defaults.
+        rotate_xticklabels: Whether to rotate x-axis tick labels 45 degrees.
 
     Returns:
         tuple[plt.Figure, np.ndarray[plt.Axes]]: Figure and the full 2D array of axes.
@@ -1259,7 +1262,7 @@ def plot_gridded_panels(
     calc_vmin, calc_vmax = None, None
     mappable_for_cbar = None
     if add_shared_cbar and (
-        global_vmin is None and global_vmax is None and use_shared_clims
+            global_vmin is None and global_vmax is None and use_shared_clims
     ):
         all_z_data = []
         print("Calculating shared color limits...")
@@ -1324,7 +1327,7 @@ def plot_gridded_panels(
                 if isinstance(linewidths, (int, float)):
                     linewidths = [linewidths] * len(y_data_list)
                 elif not isinstance(linewidths, list) or len(linewidths) != len(
-                    y_data_list
+                        y_data_list
                 ):
                     linewidths = [1.5] * len(y_data_list)
                 any_label_present = False
@@ -1384,7 +1387,7 @@ def plot_gridded_panels(
                 )
                 if add_shared_cbar and r == nrows - 1:
                     mappable_for_cbar = im
-                # Turn off cbar axis for pcolormesh if not last row
+                # Turn off cbar axis for pcolormesh if not last row 
                 if add_shared_cbar and r != nrows - 1:
                     axes[r, ncols_main].axis("off")
 
@@ -1426,11 +1429,11 @@ def plot_gridded_panels(
                                 )  # Assumes datetime
                             except TypeError:
                                 mid_dt = (
-                                    start + (end - start) / 2
+                                        start + (end - start) / 2
                                 )  # Assume numeric otherwise
                             y_txt = (
-                                ax.get_ylim()[0]
-                                + (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.95
+                                    ax.get_ylim()[0]
+                                    + (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.95
                             )
                             lbl_color = (
                                 block_label_color
@@ -1460,8 +1463,8 @@ def plot_gridded_panels(
                             lw=1,
                         )
                         y_txt = (
-                            ax.get_ylim()[0]
-                            + (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.95
+                                ax.get_ylim()[0]
+                                + (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.95
                         )
                         ax.text(
                             x_val,
@@ -1530,6 +1533,10 @@ def plot_gridded_panels(
             ax.set_ylabel(plot_info.get("ylabel", ""), fontsize=label_fontsize)
             ax.set_xlabel(plot_info.get("xlabel", ""), fontsize=label_fontsize)
             ax.tick_params(axis="both", labelsize=tick_label_fontsize)
+
+            # Rotate x-axis labels if requested
+            if rotate_xticklabels:
+                plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
 
     # --- Configure Colorbar Column (same logic) ---
     if add_shared_cbar:

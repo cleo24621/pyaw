@@ -1,6 +1,6 @@
 import numpy as np
+from numpy.typing import NDArray
 import pandas as pd
-from nptyping import NDArray, Shape, Float64
 from pyaw.utils import other
 from pyaw.utils.coordinate import NEC2SCandSC2NEC
 
@@ -31,8 +31,8 @@ class NEC2SCofMAG:
 
     @staticmethod
     def _quaternion_multiply(
-            p: NDArray[Shape["4"], Float64], q: NDArray[Shape["4"], Float64]
-    ) -> NDArray[Shape["4"], Float64]:
+            p: NDArray, q: NDArray
+    ) -> NDArray:
         """
         Define quaternion multiplication (differ from the general multiplication).
         quaternion using in swarm 1b product algorithm. it is a little different from the general definition of quaternion.
@@ -57,9 +57,9 @@ class NEC2SCofMAG:
 
     def _rotate_vector_by_quaternion(
         self,
-        vector: NDArray[Shape["3"], Float64],
-        quaternion: NDArray[Shape["4"], Float64],
-    ) -> NDArray[Shape["3"], Float64]:
+        vector: NDArray,
+        quaternion: NDArray,
+    ) -> NDArray:
         """
         Rotate vector using quaternion. Refer to the docs of 'quaternion_multiply()'.
 

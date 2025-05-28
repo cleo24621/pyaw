@@ -13,6 +13,9 @@ from pyaw.configs import ProjectConfigs
 from pyaw.utils import orbit
 from pyaw.utils.other import get_3arrs
 
+SAVE_DIR = r"D:\Temp"
+
+
 orbit_num_list = list(range(12727, 12743))
 file_names_mag = [
     "SW_OPER_MAGA_LR_1B_12727_20160229T235551_20160301T012924.pkl",
@@ -194,7 +197,7 @@ for orbit_num, file_path_measurement, file_path_igrf, file_path_aux in zip(
 
     print(f"plot {orbit_num} 3 components of Disturb Magnetic Field")
     plot_for_paper(datetimes=df_measurement.index.values, b1=delta_B_E, b2=delta_B_N, b3=delta_B_C,
-                   orbit_number=orbit_num, if_save=True)
+                   orbit_number=orbit_num, if_save=True,save_dir=SAVE_DIR)
     print("end plot")
 
     # plot for paper
@@ -271,10 +274,9 @@ fig, axes = orbit.plot_dual_hemisphere_orbits(
 )
 
 # %% save
-save_dir = r"G:\note\毕业论文\images"
-save = False
+save = True
 if save:
     output_filename_png = f"The_Hemisphere_Projection_of_SwarmA_Disturb_Magnetic_Field_from_20160229T235551_to_20160302T005246.png"
-    output_path = os.path.join(save_dir, output_filename_png)
+    output_path = os.path.join(SAVE_DIR, output_filename_png)
     print(f"Saving figure to {output_filename_png} (300 DPI)")
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
