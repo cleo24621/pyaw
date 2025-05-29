@@ -24,7 +24,7 @@ download_types = ["measurements"]
 for orbit_num in orbit_nums:
     for download_type in download_types:
         download_orbit_collection(
-            spacecraft=satellite,
+            satellite=satellite,
             collection=collection,
             orbit_number=orbit_num,
             download_type=download_type,

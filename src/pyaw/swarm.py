@@ -1,7 +1,6 @@
-import logging
-import os
 import time
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -47,8 +46,9 @@ SWARM_REQUEST_CONFIG = {
 
 
 class TCT16:
-    """process tct16 l1b production
-    for tct16, use 'nan_outliers_by_std_dev()' to process outlier
+    """
+    Process tct16 l1b production.
+    For tct16, use 'nan_outliers_by_std_dev()' to process outlier.
     """
 
     def __init__(self, file_path):
@@ -58,14 +58,16 @@ class TCT16:
         self.VsatE = self.dataframe["VsatE"].values
 
     def sc2nec(self, vectorx, vectory):
-        f"""vector s/c x,y component change to nec n,e component
-        
+        """
+        Vector is transformed from s/c coordinate system to nec coordinate system.
+        x, y -> n, e.
+
         Args:
-            vectorx: for electric filed, need input -Ex not Ex
-            vectory: same as {vectorx}
+            vectorx: x component of a vector. For electric filed, need input -Ex not Ex?
+            vectory: vectory and vectorx are similar.
 
         Returns:
-            a tuple, the first is north component, the second is east component.
+            A tuple, the first is the north component, the second is the east component.
         """
         __, rotmat_sc2nec = NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
             self.VsatN, self.VsatE
@@ -89,7 +91,8 @@ class MAG:
     def _quaternion_multiply(p: NDArray, q: NDArray) -> NDArray:
         """
         Define quaternion multiplication (differ from the general multiplication).
-        quaternion using in swarm 1b product algorithm. it is a little different from the general definition of quaternion.
+        quaternion using in swarm 1b product algorithm.
+        It is a little different from the general definition of quaternion.
 
         Args:
             p: one of the multiplication vector (np.array([p1,p2,p3,p4]))
@@ -115,14 +118,14 @@ class MAG:
         quaternion: NDArray,
     ) -> NDArray:
         """
-        Rotate vector using quaternion. Refer to the docs of 'quaternion_multiply()'.
+        Rotate vector using the quaternion.
 
         Args:
             vector: the vector needed to be rotated, (np.array([v1,v2,v3]))
             quaternion: the corresponded quaternion, (np.array([q1,q2,q3,q4]))
 
         Returns:
-            the rotated vector
+            The rotated vector.
         """
 
         vector_quat = np.array([*vector, 0])  # Convert vector to quaternion form
@@ -136,16 +139,18 @@ class MAG:
 
     def _calculate_rotated_vectors(self) -> NDArray:
         """
-        Get the variable data in SC Frame. (Note that the SC Frame is different between Swarm and DMSP)
+        Get the variable data in s/c coordinate system.
+        Note that the definition of s/c coordinate system is different between Swarm and DMSP.
+
         Args:
 
         Returns:
-            the variable data in SC Frame
+            The variable data in s/c coordinate system.
         """
         n = len(self.variable_b_nec)
         variable_sc = np.empty((n, 3))  # 预分配数组
         for i, (vector, q) in enumerate(
-                zip(self.variable_b_nec, self.variable_quaternion_nec_crf)
+            zip(self.variable_b_nec, self.variable_quaternion_nec_crf)
         ):
             quaternion_crf_nec = np.array(
                 [-q[0], -q[1], -q[2], q[3]]
@@ -158,103 +163,88 @@ class MAG:
 
 
 def download_orbit_collection(
-        spacecraft: str, collection: str, orbit_number: int, download_type: str | None
+    satellite: str,
+    collection: str,
+    orbit_number: int,
+    download_type: Union[str],
+    sdir: Path,
 ) -> None:
     """
-    Download 1 orbit of collection data as a DataFrame and save as '.pkl' file using 'vires' tool.
+    By using the 'viresclient.SwarmRequest',
+    download one orbit of collection data as a DataFrame and save it as a '.pkl' file.
 
     Args:
-        spacecraft: Swarm: one of (‘A’,’B’,’C’) or (“Alpha”, “Bravo”, “Charlie”)
-        collection:
+        satellite: one of 'A', 'B' and 'C'.
+        collection: SwarmRequest available collections.
         orbit_number:
-        download_type: one of (None,'measurements','auxiliaries','igrf'). The type of None means that the download
-        DataFrame only have 'lon','lat','alt','spacecraft' columns and time index.
+        download_type: one of None,'measurements','auxiliaries' and 'igrf'.
+        None means the download DataFrame only have 'lon','lat','alt','spacecraft' columns and time index.
 
     Returns:
-        object:
     """
-    download_st = time.time()
+    download_st = time.perf_counter()
+
     parts = collection.split("_")
-    assert spacecraft in parts[2], "the spacecraft doesn't match the collection"
+    assert satellite in parts[2], "the spacecraft doesn't match the collection"
+
     assert download_type in (
         None,
         "measurements",
         "auxiliaries",
         "igrf",
     ), "type must be one of None,'measurements','auxiliaries','igrf'"
+
     request = SwarmRequest()
     request.set_collection(collection)
     start_time, end_time = request.get_times_for_orbits(
-        start_orbit=orbit_number, end_orbit=orbit_number, spacecraft=spacecraft
+        start_orbit=orbit_number, end_orbit=orbit_number, spacecraft=satellite
     )
-    # store path (stored in b310 server)
+
+    # Store path (stored in b310 server by default).
     if download_type is None:
-        store_dir_path = Path(f"V:/aw/swarm/vires/gdcoors/{collection}")
-        store_file_name = Path(
+        sfn = Path(
             f"only_gdcoors_{collection}_{orbit_number}_{start_time.strftime('%Y%m%dT%H%M%S')}_{end_time.strftime('%Y%m%dT%H%M%S')}.pkl"
         )
         request.set_products()
     elif download_type == "measurements":
-        store_dir_path = Path(f"V:/aw/swarm/vires/measurements/{collection}")
-        store_file_name = Path(
+        sfn = Path(
             f"{collection}_{orbit_number}_{start_time.strftime('%Y%m%dT%H%M%S')}_{end_time.strftime('%Y%m%dT%H%M%S')}.pkl"
         )
         request.set_products(measurements=request.available_measurements(collection))
     elif download_type == "auxiliaries":
-        store_dir_path = Path(f"V:/aw/swarm/vires/auxiliaries/{collection}")
-        store_file_name = Path(
+        sfn = Path(
             f"aux_{collection}_{orbit_number}_{start_time.strftime('%Y%m%dT%H%M%S')}_{end_time.strftime('%Y%m%dT%H%M%S')}.pkl"
         )
         request.set_products(auxiliaries=SWARM_REQUEST_CONFIG["auxiliaries"])
     else:
-        store_dir_path = Path(f"V:/aw/swarm/vires/igrf/{collection}")
-        store_file_name = Path(
+        sfn = Path(
             f"IGRF_{collection}_{orbit_number}_{start_time.strftime('%Y%m%dT%H%M%S')}_{end_time.strftime('%Y%m%dT%H%M%S')}.pkl"
         )
         request.set_products(models=["IGRF"])
-    if Path(store_dir_path / store_file_name).exists():
-        print(f"文件已存在，跳过下载: {Path(store_dir_path / store_file_name)}")
+
+    if Path(sdir / sfn).exists():
+        print(f"文件已存在，跳过下载: {Path(sdir / sfn)}")
         return
-    if not store_dir_path.exists():
-        store_dir_path.mkdir(parents=True, exist_ok=True)
-        print(f"目录已创建: {store_dir_path}")
+    if not sdir.exists():
+        sdir.mkdir(parents=True, exist_ok=True)
+        print(f"目录已创建: {sdir}")
+
+    # Download data
     try:
+        print(f"Start downloading {orbit_number} {collection}:")
+        print(f"The customized file name is {sfn}.")
+
         data = request.get_between(start_time, end_time)
         df = data.as_dataframe()
-        df.to_pickle(store_dir_path / store_file_name)
-        download_et = time.time()
-        # 记录下载信息
-        # config log
-        log_file_path = store_dir_path / Path("logfile.log")  # 自定义日志文件路径
-        logging.basicConfig(
-            filename=log_file_path,
-            level=logging.INFO,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-        )
-        # write log
-        logging.info(
-            f"Downloaded: {store_file_name}, "
-            f"Size: {os.path.getsize(Path(store_dir_path / store_file_name))} bytes, "
-            f"Path: {store_dir_path}, "
-            f"Time: {download_et - download_st}"
-        )
-        # print information on the console
+        df.to_pickle(sdir / sfn)
+        download_et = time.perf_counter()
+
         print(
-            f"download {store_dir_path / store_file_name}, cost {download_et - download_st}"
+            f"Successfully download. {sdir / sfn}, cost {download_et - download_st} seconds."
+        )
+        print(f"The data saved in {sdir/sfn}.")
+        print(
+            f"Start time: {download_st}.\nEnd time:{download_et}.\ncost time: {download_et-download_st} seconds."
         )
     except Exception as e:
-        # 创建错误存储目录（若不存在）
-        error_dir = store_dir_path / "error_logs"  # 指定错误目录路径
-        error_dir.mkdir(parents=True, exist_ok=True)
-        # 构建错误文件名（覆写模式）
-        error_filename = (
-                error_dir / f"error_{start_time.strftime('%Y%m%dT%H%M%S')}.log"
-        )  # 带时间戳的文件名
-        # 或者使用固定文件名（每次覆盖）：error_filename = error_dir / "latest_error.log"
-        # 将错误信息写入文件（覆写模式）
-        with open(error_filename, "w") as f:
-            f.write(
-                f"Error occurred while downloading {orbit_number} {collection}: {str(e)}\n"
-            )
-        # # 可选：保留原有日志记录（如果需要同时记录到日志文件）
-        # logging.error(f"Error occurred while downloading orbit collection: {e}", exc_info=True)
+        print(f"An error occurred during download: {e}")

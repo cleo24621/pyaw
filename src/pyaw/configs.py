@@ -1,78 +1,8 @@
-from datetime import timedelta
 from pathlib import Path
 
 # ---
 # The working directory is $ProjectFileDir$
 DATA_DIR = Path("./data")
-
-
-class DMSPConfigs:
-    class SPDF:
-        # select the needed variables
-        ssies3_vars = [
-            "Epoch",
-            "glat",
-            "glon",
-            "alt",
-            "vx",
-            "vxqual",
-            "vy",
-            "vyqual",
-            "vz",
-            "vzqual",
-            "temp",
-            "tempqual",
-            "frach",
-            "frachqual",
-            "frache",
-            "frachequal",
-            "fraco",
-            "fracoqual",
-            "bx",
-            "by",
-            "bz",
-            "ductdens",
-            "te",
-        ]  # if the info are duplicated, just use one payload (except 'Epoch').
-        ssm_vars = [
-            "Epoch",
-            "SC_GEOCENTRIC_LAT",
-            "SC_GEOCENTRIC_LON",
-            "SC_GEOCENTRIC_R",
-            "SC_AACGM_LAT",
-            "SC_AACGM_LON",
-            "SC_AACGM_LTIME",
-            "B_SC_OBS_ORIG",
-            "DELTA_B_GEO",
-            "DELTA_B_SC",
-            "SC_ALONG_GEO",
-            "AURORAL_REGION",
-            "ORBIT_INDEX",
-            "AURORAL_BOUNDARY_FOM",
-            "SC_ACROSS_GEO",
-        ]
-
-        vx_qual_filter = 4  # quality filter of v (velocity of ion?
-        vy_qual_filter = 4
-        vz_qual_filter = 4
-        vx_valid_value = 2000  # valid min and max of v
-        vy_valid_value = 2000
-        vz_valid_value = 2000
-        ductdens_valid_value_min = 0  # number density of ion
-        ductdens_valid_value_max = 1e8
-        frac_qual_filter = 4  # fraction of different ions
-        frac_valid_value_min = 0
-        frac_valid_value_max = 1.05
-        temp_qual_filter = 4  # ion temperature
-        temp_valid_value_min = 500
-        temp_valid_value_max = 2e4
-        te_valid_value_min = 500  # electron temperature
-
-        te_valid_value_max = 1e4
-
-        ssies3_orbit_time = timedelta(
-            hours=1, minutes=45
-        )  # little greater than the real orbit time
 
 
 class Zh1Configs:
