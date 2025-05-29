@@ -3,19 +3,17 @@ import os.path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.signal import spectrogram
-
 from configs import ProjectConfigs
-from utils import spectral
-
-import pyaw.utils
-from src.pyaw import plot_multi_panel, plot_gridded_panels
+from scipy.signal import spectrogram
 from utils import histogram2d
 from utils import (
     interpolate_missing,
 )
+from utils import spectral
 
+import pyaw.utils
 from core import dmsp
+from src.pyaw import plot_multi_panel, plot_gridded_panels
 
 # --- file paths ---
 
@@ -81,7 +79,7 @@ mlts = df_gt_50["sc_aacgm_ltime"].values  # note that all column names are lower
 #  --- use new method to get Coherency ---
 segment_length_sec = 4  # 越大最后得到的数组的长度越小，取和之前的spectrogram输入的窗口长度是一个不错的选择，但要考虑采样率的影响
 try:
-    mid_times_all, avg_complex_coh = spectral.calculate_segmented_complex_coherency(
+    mid_times_all, avg_complex_coh = pyaw.utils.calculate_segmented_complex_coherency(
         datetimes,
         delta_B_E,
         E_north,
@@ -257,7 +255,7 @@ E_north_dy = E_north[t_mask]
 
 nperseg = fs * 8  # renew nperseg
 noverlap = nperseg // 2  # renew noverlap
-delta_B_E_dy_psd = spectral.PSD(
+delta_B_E_dy_psd = pyaw.utils.PSD(
     delta_B_E_dy,
     fs=fs,
     nperseg=nperseg,
@@ -265,7 +263,7 @@ delta_B_E_dy_psd = spectral.PSD(
     window=window,
     scaling="density",
 )  # same arguments setting as spectrogram
-E_north_dy_psd = spectral.PSD(
+E_north_dy_psd = pyaw.utils.PSD(
     E_north_dy,
     fs=fs,
     nperseg=nperseg,
@@ -314,7 +312,7 @@ delta_B_E_sta = delta_B_E[t_mask]
 E_north_sta = E_north[t_mask]
 
 ## --- pad ---
-delta_B_E_sta_psd = spectral.PSD(
+delta_B_E_sta_psd = pyaw.utils.PSD(
     delta_B_E_sta,
     fs=fs,
     nperseg=nperseg,
@@ -322,7 +320,7 @@ delta_B_E_sta_psd = spectral.PSD(
     window=window,
     scaling="density",
 )
-E_north_sta_psd = spectral.PSD(
+E_north_sta_psd = pyaw.utils.PSD(
     E_north_sta,
     fs=fs,
     nperseg=nperseg,

@@ -9,7 +9,7 @@
 @License     : 使用的许可证（如 MIT, GPL）
 @Last Modified By : 13927
 """
-import pyaw.core.swarm
+import pyaw.swarm
 from src.pyaw import SwarmDownload
 
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     orbit_number = 12019
     collection = "SW_EXPT_EFIA_TCT16"
     download_type = None
-    pyaw.core.swarm.download_orbit_collection(
+    pyaw.swarm.download_orbit_collection(
         spacecraft, collection, orbit_number, download_type
     )
 

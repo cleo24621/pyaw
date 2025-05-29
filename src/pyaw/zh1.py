@@ -7,11 +7,11 @@ from pandas import DataFrame, Series
 from pymap3d import ecef
 from scipy.interpolate import interpolate
 from scipy.signal import filtfilt, butter, buttord
-from utils import other
 from utils.filter import customize_butter
 
 import pyaw.utils
 from src.pyaw import Zh1Configs
+from utils import other
 
 
 class FGM:
@@ -739,7 +739,7 @@ def test_split():
 
     data_dir_path = r"G:\master\pyaw\data"
     # file_name = "CSES_01_SCM_1_L02_A2_096790_20191031_233256_20191101_000821_000.h5"
-    file_name = "../../../data/CSES_01_SCM_1_L02_A2_175381_20210401_012104_20210401_015640_000.h5"
+    file_name = "../../data/CSES_01_SCM_1_L02_A2_175381_20210401_012104_20210401_015640_000.h5"
     file_path = os.path.join(data_dir_path, file_name)
     scm = zh1.SCM(file_path)
     # dts = scm.datetimes

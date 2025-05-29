@@ -2,7 +2,7 @@
 
 import time
 
-from pyaw.core.swarm import download_orbit_collection
+from pyaw.swarm import download_orbit_collection
 
 satellite = "A"
 

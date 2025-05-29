@@ -1,14 +1,83 @@
 import os.path
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
-from numpy.typing import NDArray
 import pandas as pd
+import xarray as xr
+from numpy.typing import NDArray
 from pandas import DataFrame
 from spacepy.pycdf import CDF
 
-from src.pyaw import DMSPConfigs
-import xarray as xr
+SSIES3_VARS = [
+    "Epoch",
+    "glat",
+    "glon",
+    "alt",
+    "vx",
+    "vxqual",
+    "vy",
+    "vyqual",
+    "vz",
+    "vzqual",
+    "temp",
+    "tempqual",
+    "frach",
+    "frachqual",
+    "frache",
+    "frachequal",
+    "fraco",
+    "fracoqual",
+    "bx",
+    "by",
+    "bz",
+    "ductdens",
+    "te",
+]  # if the info are duplicated, just use one payload (except 'Epoch').
+SSM_VARS = [
+    "Epoch",
+    "SC_GEOCENTRIC_LAT",
+    "SC_GEOCENTRIC_LON",
+    "SC_GEOCENTRIC_R",
+    "SC_AACGM_LAT",
+    "SC_AACGM_LON",
+    "SC_AACGM_LTIME",
+    "B_SC_OBS_ORIG",
+    "DELTA_B_GEO",
+    "DELTA_B_SC",
+    "SC_ALONG_GEO",
+    "AURORAL_REGION",
+    "ORBIT_INDEX",
+    "AURORAL_BOUNDARY_FOM",
+    "SC_ACROSS_GEO",
+]
+
+QUALITY_INDICES = {
+    'vx_qual_filter': 4,
+    'vy_qual_filter': 4,
+    'vz_qual_filter': 4,
+    'frac_qual_filter': 4,
+    'temp_qual_filter': 4,
+
+}
+# valid min and max
+VALID_VALUES = {
+    'vx_valid_value': 2000,
+    'vy_valid_value': 2000,
+    'vz_valid_value': 2000,
+    'ductdens_valid_value_min': 0,  # number density of ion
+    'ductdens_valid_value_max': 1e8,
+    'frac_valid_value_min': 0,
+    'frac_valid_value_max': 1.05,
+    'temp_valid_value_min': 500,
+    'temp_valid_value_max': 2e4,
+    'te_valid_value_min': 500,
+    'te_valid_value_max': 1e4
+
+}
+
+SSIES3_ORBIT_TIME = timedelta(
+    hours=1, minutes=45
+)  # little greater than the real orbit time
 
 
 class SPDF:

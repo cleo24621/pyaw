@@ -9,20 +9,19 @@ import os.path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from configs import ProjectConfigs
-from utils import spectral
-
-import pyaw.satellite
-import pyaw.utils
-from src.pyaw import plot_multi_panel, plot_gridded_panels
-from utils import histogram2d, coordinate
 from utils import (
     OutlierData,
     interpolate_missing,
     align_high2low,
     get_3arrs,
 )
+from utils import histogram2d, coordinate
+from utils import spectral
+
+import pyaw.satellite
+import pyaw.utils
+from src.pyaw import plot_multi_panel, plot_gridded_panels
 
 # %% basic parameters
 window = "hann"
@@ -151,13 +150,13 @@ a_min = fc / (8 * dt)  # 对应 8 Hz
 a_max = fc / (0.1 * dt)  # 对应 0.1 Hz
 scales = np.arange(a_min, a_max, 0.1)  # 生成尺度数组
 
-cwt_eb_dy = spectral.CWT(E_north_dy, delta_B_E_align_dy, scales=scales, fs=fs,wavelet=wavelet)
+cwt_eb_dy = pyaw.utils.CWT(E_north_dy, delta_B_E_align_dy, scales=scales, fs=fs, wavelet=wavelet)
 cwt_eb_m_dy, cwt_eb_p_dy, cwt_eb_f_dy = cwt_eb_dy.get_cross_spectral()
 
 num_bins = 30
 cwt_eb_p_bins_dy, cwt_eb_p_histogram2d_dy = pyaw.utils.get_phase_histogram2d(cwt_eb_f_dy, cwt_eb_p_dy, num_bins)
 
-cwt_eb_sta = spectral.CWT(E_north_sta, delta_B_E_align_sta, scales=scales, fs=fs,wavelet=wavelet)
+cwt_eb_sta = pyaw.utils.CWT(E_north_sta, delta_B_E_align_sta, scales=scales, fs=fs, wavelet=wavelet)
 cwt_eb_m_sta, cwt_eb_p_sta, cwt_eb_f_sta = cwt_eb_sta.get_cross_spectral()
 
 cwt_eb_p_bins_sta, cwt_eb_p_histogram2d_sta = pyaw.utils.get_phase_histogram2d(cwt_eb_f_sta, cwt_eb_p_sta, num_bins)

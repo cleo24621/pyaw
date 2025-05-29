@@ -4,16 +4,14 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.signal import spectrogram
-
 from configs import ProjectConfigs
+from scipy.signal import spectrogram
+from utils import histogram2d
+from utils import spectral
 
 import pyaw.utils
 from core import dmsp
-from utils import spectral
 from src.pyaw import plot_multi_panel, plot_gridded_panels
-from utils import histogram2d
-
 
 #%% save or not. show or not.
 save = True
@@ -85,7 +83,7 @@ cpsd = Sxx_e * np.conj(Sxx_b)
 # %% get Coherency
 segment_length_sec = 10  # 越大最后得到的数组的长度越小
 try:
-    mid_times_all, avg_complex_coh = spectral.calculate_segmented_complex_coherency(
+    mid_times_all, avg_complex_coh = pyaw.utils.calculate_segmented_complex_coherency(
         datetimes,
         b_sc2,
         E_sc1,
@@ -263,28 +261,28 @@ E_sc1_sta = E_sc1[t_mask_sta]
 # %% Region: get psd
 nperseg_psd = 64
 
-b_sc2_dy_psd = spectral.PSD(
+b_sc2_dy_psd = pyaw.utils.PSD(
     b_sc2_dy,
     fs=fs,
     nperseg=nperseg_psd,
     window=window,
     scaling="density",
 )
-E_sc1_dy_psd = spectral.PSD(
+E_sc1_dy_psd = pyaw.utils.PSD(
     E_sc1_dy,
     fs=fs,
     nperseg=nperseg_psd,
     window=window,
     scaling="density",
 )
-b_sc2_sta_psd = spectral.PSD(
+b_sc2_sta_psd = pyaw.utils.PSD(
     b_sc2_sta,
     fs=fs,
     nperseg=nperseg_psd,
     window=window,
     scaling="density",
 )
-E_sc1_sta_psd = spectral.PSD(
+E_sc1_sta_psd = pyaw.utils.PSD(
     E_sc1_sta,
     fs=fs,
     nperseg=nperseg_psd,

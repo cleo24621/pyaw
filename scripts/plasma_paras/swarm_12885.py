@@ -1,11 +1,12 @@
 import os
+from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import matplotlib.pyplot as plt
 
 import pyaw.satellite
+import pyaw.utils
 
 SHOW = False
 SAVE = True
@@ -221,14 +222,14 @@ else:
     from utils import spectral
 
     WINDOW = "hann"
-    delta_B_E_align_dy_psd = spectral.PSD(
+    delta_B_E_align_dy_psd = pyaw.utils.PSD(
         delta_B_E_align_dy,
         fs=FS,
         nperseg=nperseg_psd,
         window=WINDOW,
         scaling="density",
     )
-    E_north_dy_psd = spectral.PSD(
+    E_north_dy_psd = pyaw.utils.PSD(
         E_north_dy,
         fs=FS,
         nperseg=nperseg_psd,

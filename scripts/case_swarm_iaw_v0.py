@@ -3,17 +3,16 @@ import os.path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.signal import spectrogram
-
 from configs import ProjectConfigs
-from utils import spectral
-from utils import histogram2d, coordinate
+from scipy.signal import spectrogram
 from utils import (
     OutlierData,
     interpolate_missing,
     align_high2low,
     get_3arrs,
 )
+from utils import histogram2d, coordinate
+from utils import spectral
 
 import pyaw.satellite
 import pyaw.utils
@@ -145,7 +144,7 @@ cpsd = Sxx_e * np.conj(Sxx_b)
 # use new method to get Coherency
 segment_length_sec = 4  # 越大最后得到的数组的长度越小，取和之前的spectrogram输入的窗口长度是一个不错的选择
 try:
-    mid_times_all, avg_complex_coh = spectral.calculate_segmented_complex_coherency(
+    mid_times_all, avg_complex_coh = pyaw.utils.calculate_segmented_complex_coherency(
         datetimes,
         delta_B_E_align,
         E_north,
@@ -342,28 +341,28 @@ Vsat_mean = np.mean(Vsat)
 # get psd
 nperseg_psd = 64  # same as the 1st spectrogram nperseg
 
-delta_B_E_align_dy_psd = spectral.PSD(
+delta_B_E_align_dy_psd = pyaw.utils.PSD(
     delta_B_E_align_dy,
     fs=FS,
     nperseg=nperseg_psd,
     window=WINDOW,
     scaling="density",
 )  # same arguments setting as spectrogram
-E_north_dy_psd = spectral.PSD(
+E_north_dy_psd = pyaw.utils.PSD(
     E_north_dy,
     fs=FS,
     nperseg=nperseg_psd,
     window=WINDOW,
     scaling="density",
 )
-delta_B_E_align_sta_psd = spectral.PSD(
+delta_B_E_align_sta_psd = pyaw.utils.PSD(
     delta_B_E_align_sta,
     fs=FS,
     nperseg=nperseg_psd,
     window=WINDOW,
     scaling="density",
 )
-E_north_sta_psd = spectral.PSD(
+E_north_sta_psd = pyaw.utils.PSD(
     E_north_sta,
     fs=FS,
     nperseg=nperseg_psd,
