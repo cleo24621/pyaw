@@ -1,5 +1,5 @@
 import unittest
-from pyaw.core import process_data
+from core import process_data
 
 
 class MyTestCase(unittest.TestCase):

@@ -9,7 +9,9 @@
 @License     : 使用的许可证（如 MIT, GPL）
 @Last Modified By : 13927
 """
-from pyaw.core.download_data import SwarmDownload
+import pyaw.core.swarm
+from src.pyaw import SwarmDownload
+
 
 def main():
     pass
@@ -17,11 +19,13 @@ def main():
 
 if __name__ == "__main__":
     # orbit
-    spacecraft = 'A'
+    spacecraft = "A"
     orbit_number = 12019
-    collection = 'SW_EXPT_EFIA_TCT16'
+    collection = "SW_EXPT_EFIA_TCT16"
     download_type = None
-    SwarmDownload.download_orbit_collection(spacecraft,collection,orbit_number,download_type)
+    pyaw.core.swarm.download_orbit_collection(
+        spacecraft, collection, orbit_number, download_type
+    )
 
     # # orbits
     # spacecraft = 'A'

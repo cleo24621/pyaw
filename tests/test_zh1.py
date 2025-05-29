@@ -5,8 +5,8 @@ import pandas as pd
 from pandas import DataFrame
 
 from core import zh1
-from pyaw.utils.file import find_parent_directory
-from pyaw.configs import Zh1Configs
+from utils.file import find_parent_directory
+from src.pyaw import Zh1Configs
 
 
 class TestFGM(unittest.TestCase):

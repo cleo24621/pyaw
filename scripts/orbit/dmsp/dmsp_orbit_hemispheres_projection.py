@@ -1,11 +1,10 @@
 import os
 
-import pandas as pd
 from matplotlib import pyplot as plt
 
-from pyaw.configs import ProjectConfigs
-from pyaw.utils import orbit
-from pyaw.core import dmsp
+from src.pyaw import ProjectConfigs
+from utils import orbit
+from core import dmsp
 
 # 主程序部分
 satellite = "dmsp"

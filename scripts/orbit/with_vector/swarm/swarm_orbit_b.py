@@ -5,8 +5,6 @@ import pandas as pd
 import os
 import matplotlib.path as mpath  # 添加此行！
 
-import utils.other
-from pyaw import utils
 
 def process_data(df_b,df_b_igrf):
     # 提取数据

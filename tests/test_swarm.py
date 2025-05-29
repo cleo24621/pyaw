@@ -2,9 +2,7 @@ import unittest
 
 import numpy as np
 
-from datetime import datetime, timedelta
-
-from pyaw.core.process_data import SwarmProcess
+from src.pyaw import SwarmProcess
 
 import core.swarm
 

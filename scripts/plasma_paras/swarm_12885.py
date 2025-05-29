@@ -5,6 +5,8 @@ import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
 
+import pyaw.satellite
+
 SHOW = False
 SAVE = True
 ADD_MEASUREMENT_RATIO = True
@@ -93,7 +95,7 @@ if SAVE:
     print(f"Saving figure to {output_filename_png} (300 DPI)")
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
 
-from pyaw.parameters import (
+from src.pyaw import (
     OXYGEN_ATOMIC_MASS,
     calculate_electron_inertial_length,
     LIGHT_SPEED,
@@ -175,29 +177,29 @@ else:
     ]
     df_e_clip = df_e_clip.loc[pd.Timestamp(start_time) : pd.Timestamp(end_time)]
 
-    from pyaw.utils.other import OutlierData, interpolate_missing
+    from src.pyaw import OutlierData, interpolate_missing
 
     Ehx = df_e_clip["Ehx"].values
-    Ehx_outlier = OutlierData.set_outliers_nan_std(Ehx, 1, print_=True)
+    Ehx_outlier = set_outliers_nan_std(Ehx, 1, print_=True)
     Ehx_outlier_interp = interpolate_missing(Ehx_outlier, df_e_clip.index.values)
     Ehy = df_e_clip["Ehy"].values
-    Ehy_outlier = OutlierData.set_outliers_nan_std(Ehy, 1, print_=True)
+    Ehy_outlier = set_outliers_nan_std(Ehy, 1, print_=True)
     Ehy_outlier_interp = interpolate_missing(Ehy_outlier, df_e_clip.index.values)
 
     VsatN = df_e_clip["VsatN"].values
     VsatE = df_e_clip["VsatE"].values
     VsatC = df_e_clip["VsatC"].values
 
-    from pyaw.utils import coordinate
+    from utils import coordinate
 
-    rotmat_nec2sc, rotmat_sc2nec = coordinate.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
+    rotmat_nec2sc, rotmat_sc2nec = pyaw.satellite.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
         VsatN, VsatE
     )
-    E_north, E_east = coordinate.NEC2SCandSC2NEC.do_rotation(
+    E_north, E_east = pyaw.satellite.NEC2SCandSC2NEC.do_rotation(
         -Ehx_outlier_interp, -Ehy_outlier_interp, rotmat_sc2nec
     )
 
-    from pyaw.utils.other import get_3arrs, align_high2low
+    from src.pyaw import get_3arrs, align_high2low
 
     B_N, B_E, B_C = get_3arrs(df_b_clip["B_NEC"].values)
     B_N_IGRF, B_E_IGRF, B_C_IGRF = get_3arrs(df_b_IGRF_clip["B_NEC_IGRF"].values)

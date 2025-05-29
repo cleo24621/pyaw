@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
-from pyaw.configs import ProjectConfigs
-from pyaw.core.dmsp import SPDF
+from src.pyaw import ProjectConfigs
+from core.dmsp import SPDF
 
 data_dir_path = ProjectConfigs.data_dir_path
 

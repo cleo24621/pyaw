@@ -3,18 +3,16 @@ import os.path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from scipy.signal import spectrogram
 
 from configs import ProjectConfigs
-from pyaw.utils import spectral
-from pyaw.utils.plot import plot_multi_panel, plot_gridded_panels
-from utils import histogram2d, coordinate
-from utils.other import (
-    OutlierData,
+from utils import spectral
+
+import pyaw.utils
+from src.pyaw import plot_multi_panel, plot_gridded_panels
+from utils import histogram2d
+from utils import (
     interpolate_missing,
-    align_high2low,
-    get_3arrs,
 )
 
 from core import dmsp
@@ -303,7 +301,7 @@ num_bins = 50
 cpsd_phase_dy = np.degrees(np.angle(cpsd_dy))
 cpsd_m_dy = np.abs(cpsd_dy)
 cpsd_phase_dy[cpsd_m_dy < 0.03] = np.nan  # threshold
-phase_bins_dy, phase_histogram2d_dy = histogram2d.get_phase_histogram2d(
+phase_bins_dy, phase_histogram2d_dy = pyaw.utils.get_phase_histogram2d(
     frequencies_spec_dy, cpsd_phase_dy, num_bins=num_bins
 )
 
@@ -364,7 +362,7 @@ cpsd_sta = Sxx_e_sta * np.conj(Sxx_b_sta)
 cpsd_phase_sta = np.degrees(np.angle(cpsd_sta))
 cpsd_m_sta = np.abs(cpsd_sta)
 cpsd_phase_sta[cpsd_m_sta < 0.03] = np.nan  # threshold
-phase_bins_sta, phase_histogram2d_sta = histogram2d.get_phase_histogram2d(
+phase_bins_sta, phase_histogram2d_sta = pyaw.utils.get_phase_histogram2d(
     frequencies_spec_sta, cpsd_phase_sta, num_bins=num_bins
 )
 
@@ -376,7 +374,7 @@ eb_ratio_psd_dy = (
 eb_ratio_psd_sta = (Pxx_E_north_sta_psd / Pxx_delta_B_E_sta_psd) * 1e-3 * 1e9
 
 # --- lower and upper bound
-from pyaw.parameters import (
+from src.pyaw import (
     PhysicalParameters,
     calculate_lower_bound,
     calculate_upper_bound,

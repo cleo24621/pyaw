@@ -3,10 +3,10 @@ import os.path
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from pyaw.configs import ProjectConfigs
-from pyaw.utils import orbit
-from utils import coordinate
-from utils.other import OutlierData
+import pyaw.satellite
+from src.pyaw import ProjectConfigs
+from utils import coordinate, orbit
+from utils import OutlierData
 
 file_names_tct16 = [
     "SW_EXPT_EFIA_TCT16_12727_20160229T235551_20160301T012924.pkl",
@@ -44,17 +44,17 @@ for file_path in file_paths:
     Ehx = df["Ehx"].values
     Ehy = df["Ehy"].values
     # outlier
-    Ehx = OutlierData.set_outliers_nan_std(Ehx, 1, print_=True)
-    Ehy = OutlierData.set_outliers_nan_std(Ehy, 1, print_=True)
+    Ehx = set_outliers_nan_std(Ehx, 1, print_=True)
+    Ehy = set_outliers_nan_std(Ehy, 1, print_=True)
 
     VsatN = df["VsatN"].values
     VsatE = df["VsatE"].values
 
     # 计算旋转矩阵
-    rotmat_nec2sc, rotmat_sc2nec = coordinate.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
+    rotmat_nec2sc, rotmat_sc2nec = pyaw.satellite.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
         VsatN, VsatE
     )
-    E_north, E_east = coordinate.NEC2SCandSC2NEC.do_rotation(
+    E_north, E_east = pyaw.satellite.NEC2SCandSC2NEC.do_rotation(
         -Ehx, -Ehy, rotmat_sc2nec
     )  # todo: use '-'
 

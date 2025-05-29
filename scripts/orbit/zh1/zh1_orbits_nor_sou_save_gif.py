@@ -8,7 +8,7 @@ import imageio.v2 as imageio  # 确保使用 v2 版本
 import subprocess  # 用于 ffmpeg 方案
 
 from utils import get_orbit_num_indicator_st_et
-from utils.orbit import get_nor_sou_split_indices_zh1
+from utils import get_nor_sou_split_indices_zh1
 from zh1 import zh1
 
 def plot_orbits(file_paths, proj_method="NorthPolarStereo", central_longitude=0,

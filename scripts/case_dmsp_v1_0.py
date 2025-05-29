@@ -7,9 +7,11 @@ import numpy as np
 from scipy.signal import spectrogram
 
 from configs import ProjectConfigs
+
+import pyaw.utils
 from core import dmsp
-from pyaw.utils import spectral
-from pyaw.utils.plot import plot_multi_panel, plot_gridded_panels
+from utils import spectral
+from src.pyaw import plot_multi_panel, plot_gridded_panels
 from utils import histogram2d
 
 
@@ -339,14 +341,14 @@ num_bins = 50
 cpsd_phase_dy = np.degrees(np.angle(cpsd_dy))
 cpsd_m_dy = np.abs(cpsd_dy)
 cpsd_phase_dy[cpsd_m_dy < cpsd_m_threshold] = np.nan
-phase_bins_dy, phase_histogram2d_dy = histogram2d.get_phase_histogram2d(
+phase_bins_dy, phase_histogram2d_dy = pyaw.utils.get_phase_histogram2d(
     frequencies_spec_dy, cpsd_phase_dy, num_bins=num_bins
 )
 
 cpsd_phase_sta = np.degrees(np.angle(cpsd_sta))
 cpsd_m_sta = np.abs(cpsd_sta)
 cpsd_phase_sta[cpsd_m_sta < cpsd_m_threshold] = np.nan
-phase_bins_sta, phase_histogram2d_sta = histogram2d.get_phase_histogram2d(
+phase_bins_sta, phase_histogram2d_sta = pyaw.utils.get_phase_histogram2d(
     frequencies_spec_sta, cpsd_phase_sta, num_bins=num_bins
 )
 
@@ -355,7 +357,7 @@ eb_ratio_psd_dy = (Pxx_E_sc1_dy / Pxx_b_sc2_dy) * 1e-3 * 1e9  # transform unit
 eb_ratio_psd_sta = (Pxx_E_sc1_sta / Pxx_b_sc2_sta) * 1e-3 * 1e9
 
 # %% Region: lower and upper bound and other parameters
-from pyaw.parameters import VACUUM_PERMEABILITY,Alfven
+from src.pyaw import VACUUM_PERMEABILITY, Alfven
 
 pedersen_conductance_dynamic = 3.0
 alfven_velocity_dynamic = 1.4e6

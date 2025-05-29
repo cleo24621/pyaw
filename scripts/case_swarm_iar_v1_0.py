@@ -9,13 +9,15 @@ import os.path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.signal import spectrogram
 
 from configs import ProjectConfigs
-from pyaw.utils import spectral
-from pyaw.utils.plot import plot_multi_panel, plot_gridded_panels
+from utils import spectral
+
+import pyaw.satellite
+import pyaw.utils
+from src.pyaw import plot_multi_panel, plot_gridded_panels
 from utils import histogram2d, coordinate
-from utils.other import (
+from utils import (
     OutlierData,
     interpolate_missing,
     align_high2low,
@@ -77,21 +79,21 @@ mlts = df_e_aux_clip["MLT"].values
 
 # %%  --- process data: electric field
 Ehx = df_e_clip["Ehx"].values
-Ehx_outlier = OutlierData.set_outliers_nan_std(Ehx, 1, print_=True)
+Ehx_outlier = set_outliers_nan_std(Ehx, 1, print_=True)
 Ehx_outlier_interp = interpolate_missing(Ehx_outlier, df_e_clip.index.values)
 
 Ehy = df_e_clip["Ehy"].values
-Ehy_outlier = OutlierData.set_outliers_nan_std(Ehy, 1, print_=True)
+Ehy_outlier = set_outliers_nan_std(Ehy, 1, print_=True)
 Ehy_outlier_interp = interpolate_missing(Ehy_outlier, df_e_clip.index.values)
 
 VsatN = df_e_clip["VsatN"].values
 VsatE = df_e_clip["VsatE"].values
 
 # %%  --- process data: electric field: sc2nec
-rotmat_nec2sc, rotmat_sc2nec = coordinate.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
+rotmat_nec2sc, rotmat_sc2nec = pyaw.satellite.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
     VsatN, VsatE
 )
-E_north, E_east = coordinate.NEC2SCandSC2NEC.do_rotation(
+E_north, E_east = pyaw.satellite.NEC2SCandSC2NEC.do_rotation(
     -Ehx_outlier_interp, -Ehy_outlier_interp, rotmat_sc2nec
 )  # todo: why need '-'
 
@@ -153,12 +155,12 @@ cwt_eb_dy = spectral.CWT(E_north_dy, delta_B_E_align_dy, scales=scales, fs=fs,wa
 cwt_eb_m_dy, cwt_eb_p_dy, cwt_eb_f_dy = cwt_eb_dy.get_cross_spectral()
 
 num_bins = 30
-cwt_eb_p_bins_dy, cwt_eb_p_histogram2d_dy = histogram2d.get_phase_histogram2d(cwt_eb_f_dy, cwt_eb_p_dy, num_bins)
+cwt_eb_p_bins_dy, cwt_eb_p_histogram2d_dy = pyaw.utils.get_phase_histogram2d(cwt_eb_f_dy, cwt_eb_p_dy, num_bins)
 
 cwt_eb_sta = spectral.CWT(E_north_sta, delta_B_E_align_sta, scales=scales, fs=fs,wavelet=wavelet)
 cwt_eb_m_sta, cwt_eb_p_sta, cwt_eb_f_sta = cwt_eb_sta.get_cross_spectral()
 
-cwt_eb_p_bins_sta, cwt_eb_p_histogram2d_sta = histogram2d.get_phase_histogram2d(cwt_eb_f_sta, cwt_eb_p_sta, num_bins)
+cwt_eb_p_bins_sta, cwt_eb_p_histogram2d_sta = pyaw.utils.get_phase_histogram2d(cwt_eb_f_sta, cwt_eb_p_sta, num_bins)
 
 
 # #%% 1st plot

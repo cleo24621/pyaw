@@ -2,8 +2,8 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from pyaw.utils import orbit
-from pyaw.core import zh1
+from utils import orbit
+from core import zh1
 
 from get_1d_file_names import get_1d_file_names
 

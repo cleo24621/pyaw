@@ -2,7 +2,10 @@ import unittest
 
 import numpy as np
 
-from pyaw.utils import coordinate,orbit
+from utils import coordinate
+
+import pyaw.satellite
+
 
 class MyTestCase(unittest.TestCase):
     def test_orbit_hemisphere_with_vector_projection(self):
@@ -11,8 +14,8 @@ class MyTestCase(unittest.TestCase):
         import pandas as pd
         from matplotlib import pyplot as plt
 
-        from pyaw.configs import ProjectConfigs
-        from pyaw.utils import orbit
+        from src.pyaw import ProjectConfigs
+        from utils import orbit
 
         satellite = "Swarm"
         data_dir_path = ProjectConfigs.data_dir_path
@@ -33,8 +36,8 @@ class MyTestCase(unittest.TestCase):
         VsatE = df['VsatE'].values
 
         # 计算旋转矩阵
-        rotmat_nec2sc, rotmat_sc2nec = coordinate.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(VsatN, VsatE)
-        E_north, E_east = coordinate.NEC2SCandSC2NEC.do_rotation(-Ehx, -Ehy, rotmat_sc2nec)
+        rotmat_nec2sc, rotmat_sc2nec = pyaw.satellite.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(VsatN, VsatE)
+        E_north, E_east = pyaw.satellite.NEC2SCandSC2NEC.do_rotation(-Ehx, -Ehy, rotmat_sc2nec)
 
         # 正则化矢量
         magnitudes = np.sqrt(E_east ** 2 + E_north ** 2)
@@ -44,7 +47,8 @@ class MyTestCase(unittest.TestCase):
         E_east_norm = (E_east / max_mag) * scale_factor
         E_north_norm = (E_north / max_mag) * scale_factor
 
-        orbit.orbit_hemisphere_with_vector_projection(lons=lons,lats=lats,vector_east=E_east_norm,vector_north=E_north_norm,proj_method=proj_method)
+        orbit.orbit_hemisphere_with_vector_projection(lons=lons, lats=lats, vector_east=E_east_norm,
+                                                      vector_north=E_north_norm, proj_method=proj_method)
         plt.show()
 
 

@@ -2,8 +2,8 @@ import unittest
 
 import pandas as pd
 
-import utils.orbit
-from pyaw.utils.orbit import (
+import utils
+from utils.orbit import (
     orbit_hemisphere_projection,
     orbit_hemispheres_projection,
     orbits_hemisphere_projection,
@@ -16,9 +16,8 @@ class MyTestCase(unittest.TestCase):
         import os
 
         import pandas as pd
-        from matplotlib import pyplot as plt
 
-        from pyaw.configs import ProjectConfigs
+        from src.pyaw import ProjectConfigs
 
         satellite = "Swarm"
         data_dir_path = ProjectConfigs.data_dir_path
@@ -41,9 +40,8 @@ class MyTestCase(unittest.TestCase):
         import os
 
         import pandas as pd
-        from matplotlib import pyplot as plt
 
-        from pyaw.configs import ProjectConfigs
+        from src.pyaw import ProjectConfigs
 
         # 主程序部分
         satellite = "Swarm"
@@ -74,9 +72,7 @@ class MyTestCase(unittest.TestCase):
     def test_orbits_hemisphere_projection(self):
         import os.path
 
-        from matplotlib import pyplot as plt
-
-        from pyaw.configs import ProjectConfigs
+        from src.pyaw import ProjectConfigs
 
         # 主程序部分
         fns = [
@@ -117,9 +113,7 @@ class MyTestCase(unittest.TestCase):
     def test_orbits_hemispheres_projection(self):
         import os.path
 
-        from matplotlib import pyplot as plt
-
-        from pyaw.configs import ProjectConfigs
+        from src.pyaw import ProjectConfigs
 
         # 主程序部分
         fns = [

@@ -1,6 +1,6 @@
 import os.path
 import unittest
-from pyaw.utils.file import find_parent_directory
+from utils.file import find_parent_directory
 
 
 class MyTestCase(unittest.TestCase):

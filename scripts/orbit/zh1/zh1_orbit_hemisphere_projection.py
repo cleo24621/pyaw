@@ -2,9 +2,9 @@ import os
 
 from matplotlib import pyplot as plt
 
-from pyaw.configs import ProjectConfigs
-from pyaw.utils import orbit
-from pyaw.core import zh1
+from src.pyaw import ProjectConfigs
+from utils import orbit
+from core import zh1
 
 satellite = "zh1"
 data_dir_path = ProjectConfigs.data_dir_path

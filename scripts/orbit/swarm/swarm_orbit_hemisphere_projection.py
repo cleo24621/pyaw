@@ -3,8 +3,8 @@ import os
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from pyaw.configs import ProjectConfigs
-from pyaw.utils import orbit
+from src.pyaw import ProjectConfigs
+from utils import orbit
 
 satellite = "Swarm"
 data_dir_path = ProjectConfigs.data_dir_path

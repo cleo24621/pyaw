@@ -3,8 +3,8 @@ import os.path
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from pyaw.configs import ProjectConfigs
-from pyaw.utils import orbit
+from src.pyaw import ProjectConfigs
+from utils import orbit
 
 # 主程序部分
 fns = [

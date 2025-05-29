@@ -1,13 +1,12 @@
 import os.path
 import unittest
-from pathlib import Path
 
 import pandas as pd
 
-import utils.orbit
-from pyaw.core import zh1
-from pyaw.utils import orbit_temp
-from pyaw.configs import ProjectConfigs
+import utils
+from core import zh1
+from utils import orbit_temp
+from src.pyaw import ProjectConfigs
 
 data_dir_path = ProjectConfigs.data_dir_path
 

@@ -4,12 +4,10 @@ plot zh1 norther and southern hemisphere satellite orbit projection figure.
 
 import os
 
-import pandas as pd
 from matplotlib import pyplot as plt
-import cartopy.crs as ccrs
 
 from core import zh1
-from pyaw.configs import ProjectConfigs
+from src.pyaw import ProjectConfigs
 from utils import orbit
 
 # 主程序部分

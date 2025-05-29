@@ -1,4 +1,4 @@
-from pyaw.dmsp import SPDF
+from src.pyaw import SPDF
 
 spdf = SPDF()
 

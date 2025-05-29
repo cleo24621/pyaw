@@ -2,19 +2,21 @@ import os.path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.typing import NDArray
 import pandas as pd
 from scipy.signal import spectrogram
 
 from configs import ProjectConfigs
-from pyaw.utils import spectral
+from utils import spectral
 from utils import histogram2d, coordinate
-from utils.other import (
+from utils import (
     OutlierData,
     interpolate_missing,
     align_high2low,
     get_3arrs,
 )
+
+import pyaw.satellite
+import pyaw.utils
 
 # basic parameters
 WINDOW = "hann"
@@ -76,11 +78,11 @@ mlts = df_e_aux_clip["MLT"].values
 
 # process data: electric field
 Ehx = df_e_clip["Ehx"].values
-Ehx_outlier = OutlierData.set_outliers_nan_std(Ehx, 1, print_=True)
+Ehx_outlier = set_outliers_nan_std(Ehx, 1, print_=True)
 Ehx_outlier_interp = interpolate_missing(Ehx_outlier, df_e_clip.index.values)
 
 Ehy = df_e_clip["Ehy"].values
-Ehy_outlier = OutlierData.set_outliers_nan_std(Ehy, 1, print_=True)
+Ehy_outlier = set_outliers_nan_std(Ehy, 1, print_=True)
 Ehy_outlier_interp = interpolate_missing(Ehy_outlier, df_e_clip.index.values)
 
 # get velocity of satellite
@@ -91,10 +93,10 @@ VsatC = df_e_clip[
 ].values  # 因为base datetimes是datetimes_e，所以着3个速度分量不用进行时间对齐
 
 # process data: electric field: sc2nec
-rotmat_nec2sc, rotmat_sc2nec = coordinate.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
+rotmat_nec2sc, rotmat_sc2nec = pyaw.satellite.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
     VsatN, VsatE
 )
-E_north, E_east = coordinate.NEC2SCandSC2NEC.do_rotation(
+E_north, E_east = pyaw.satellite.NEC2SCandSC2NEC.do_rotation(
     -Ehx_outlier_interp, -Ehy_outlier_interp, rotmat_sc2nec
 )  # todo: why need '-'
 
@@ -417,14 +419,14 @@ num_bins = 50
 cpsd_phase_dy = np.degrees(np.angle(cpsd_dy))
 cpsd_m_dy = np.abs(cpsd_dy)
 cpsd_phase_dy[cpsd_m_dy < cpsd_m_threshold] = np.nan  # threshold
-phase_bins_dy, phase_histogram2d_dy = histogram2d.get_phase_histogram2d(
+phase_bins_dy, phase_histogram2d_dy = pyaw.utils.get_phase_histogram2d(
     frequencies_spec_dy, cpsd_phase_dy, num_bins=num_bins
 )
 
 cpsd_phase_sta = np.degrees(np.angle(cpsd_sta))
 cpsd_m_sta = np.abs(cpsd_sta)
 cpsd_phase_sta[cpsd_m_sta < cpsd_m_threshold] = np.nan  # threshold
-phase_bins_sta, phase_histogram2d_sta = histogram2d.get_phase_histogram2d(
+phase_bins_sta, phase_histogram2d_sta = pyaw.utils.get_phase_histogram2d(
     frequencies_spec_sta, cpsd_phase_sta, num_bins=num_bins
 )
 
@@ -436,7 +438,7 @@ eb_ratio_psd_dy = (
 eb_ratio_psd_sta = (Pxx_E_north_sta / Pxx_delta_B_E_align_sta) * 1e-3 * 1e9
 
 # lower and upper bound and other parameters
-from pyaw.parameters import VACUUM_PERMEABILITY, Alfven
+from src.pyaw import VACUUM_PERMEABILITY, Alfven
 
 pedersen_conductance_dynamic = 3.0
 # pedersen_conductance_static = 0.5
@@ -475,7 +477,7 @@ print(f"phase_vary_range_dy: {phase_vary_range_dy}")
 # get iaw curve
 
 
-from pyaw.parameters import (
+from src.pyaw import (
     calculate_approx_perpendicular_wavenumber,
     calculate_inertial_alfven_wave_electric_magnetic_field_ratio,
     calculate_electron_inertial_length,

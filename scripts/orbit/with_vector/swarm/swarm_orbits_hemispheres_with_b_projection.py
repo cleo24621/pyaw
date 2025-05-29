@@ -9,9 +9,9 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from pyaw.configs import ProjectConfigs
-from pyaw.utils import orbit
-from pyaw.utils.other import get_3arrs
+from src.pyaw import ProjectConfigs
+from utils import orbit
+from src.pyaw import get_3arrs
 
 SAVE_DIR = r"D:\Temp"
 

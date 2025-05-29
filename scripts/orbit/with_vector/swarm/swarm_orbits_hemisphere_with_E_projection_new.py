@@ -9,10 +9,10 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from pyaw.configs import ProjectConfigs
-from pyaw.utils import orbit
-from pyaw.utils.other import get_3arrs, OutlierData, interpolate_missing
-from utils import coordinate
+import pyaw.satellite
+from src.pyaw import ProjectConfigs
+from src.pyaw import get_3arrs, OutlierData, interpolate_missing
+from utils import coordinate, orbit
 
 SAVE_DIR = r"D:\Temp"
 
@@ -173,21 +173,21 @@ with open(output_filename, 'w') as outfile:
         lons = df_measurement["Longitude"].values
 
         Ehx = df_measurement["Ehx"].values
-        Ehx_outlier = OutlierData.set_outliers_nan_std(Ehx, 3, print_=True)
+        Ehx_outlier = set_outliers_nan_std(Ehx, 3, print_=True)
 
         Ehy = df_measurement["Ehy"].values
-        Ehy_outlier = OutlierData.set_outliers_nan_std(Ehy, 3, print_=True)
+        Ehy_outlier = set_outliers_nan_std(Ehy, 3, print_=True)
 
         Ehz = df_measurement["Ehz"].values
-        Ehz_outlier = OutlierData.set_outliers_nan_std(Ehz, 3, print_=True)
+        Ehz_outlier = set_outliers_nan_std(Ehz, 3, print_=True)
 
         VsatN = df_measurement["VsatN"].values
         VsatE = df_measurement["VsatE"].values
 
-        rotmat_nec2sc, rotmat_sc2nec = coordinate.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
+        rotmat_nec2sc, rotmat_sc2nec = pyaw.satellite.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
             VsatN, VsatE
         )
-        E_north, E_east = coordinate.NEC2SCandSC2NEC.do_rotation(
+        E_north, E_east = pyaw.satellite.NEC2SCandSC2NEC.do_rotation(
             -Ehx_outlier, -Ehy_outlier, rotmat_sc2nec
         )
 

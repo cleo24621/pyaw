@@ -1,8 +1,6 @@
 import unittest
 
-import pandas as pd
-
-from pyaw.utils import convert_tstr2dt64, get_3arrs, get_rotmat_nec2sc_sc2nec, do_rotation
+from utils import convert_tstr2dt64, get_3arrs, get_rotmat_nec2sc_sc2nec, do_rotation
 import numpy as np
 
 
