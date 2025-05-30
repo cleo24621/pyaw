@@ -13,7 +13,7 @@ import pyaw.utils
 from core import dmsp
 from src.pyaw import plot_multi_panel, plot_gridded_panels
 
-#%% save or not. show or not.
+# %% save or not. show or not.
 save = True
 show = False
 
@@ -261,28 +261,28 @@ E_sc1_sta = E_sc1[t_mask_sta]
 # %% Region: get psd
 nperseg_psd = 64
 
-b_sc2_dy_psd = pyaw.utils.PSD(
+b_sc2_dy_psd = pyaw.utils.CustomizedWelch(
     b_sc2_dy,
     fs=fs,
     nperseg=nperseg_psd,
     window=window,
     scaling="density",
 )
-E_sc1_dy_psd = pyaw.utils.PSD(
+E_sc1_dy_psd = pyaw.utils.CustomizedWelch(
     E_sc1_dy,
     fs=fs,
     nperseg=nperseg_psd,
     window=window,
     scaling="density",
 )
-b_sc2_sta_psd = pyaw.utils.PSD(
+b_sc2_sta_psd = pyaw.utils.CustomizedWelch(
     b_sc2_sta,
     fs=fs,
     nperseg=nperseg_psd,
     window=window,
     scaling="density",
 )
-E_sc1_sta_psd = pyaw.utils.PSD(
+E_sc1_sta_psd = pyaw.utils.CustomizedWelch(
     E_sc1_sta,
     fs=fs,
     nperseg=nperseg_psd,
@@ -362,18 +362,34 @@ alfven_velocity_dynamic = 1.4e6
 
 alfven = Alfven()
 
-boundary_l = alfven.calculate_lower_boundary(pedersen_conductance=pedersen_conductance_dynamic)
-boundary_h = alfven.calculate_upper_boundary(alfven_velocity=alfven_velocity_dynamic, pedersen_conductance=pedersen_conductance_dynamic)
+boundary_l = alfven.calculate_lower_boundary(
+    pedersen_conductance=pedersen_conductance_dynamic
+)
+boundary_h = alfven.calculate_upper_boundary(
+    alfven_velocity=alfven_velocity_dynamic,
+    pedersen_conductance=pedersen_conductance_dynamic,
+)
 print(f"boundary_l_dy*mu0: {boundary_l * VACUUM_PERMEABILITY}")
 print(f"boundary_h_dy*VACUUM_PERMEABILITY: {boundary_h * VACUUM_PERMEABILITY}")
 
-alfven_impedance = alfven.calculate_alfven_impedance(alfven_velocity=alfven_velocity_dynamic)
-alfven_admittance = alfven.calculate_alfven_admittance(alfven_impedance=alfven_impedance)
+alfven_impedance = alfven.calculate_alfven_impedance(
+    alfven_velocity=alfven_velocity_dynamic
+)
+alfven_admittance = alfven.calculate_alfven_admittance(
+    alfven_impedance=alfven_impedance
+)
 
-ionospheric_reflection_coefficient = alfven.calculate_ionospheric_reflection_coefficient(alfven_admittance=alfven_admittance, pedersen_impedance=pedersen_conductance_dynamic)
+ionospheric_reflection_coefficient = (
+    alfven.calculate_ionospheric_reflection_coefficient(
+        alfven_admittance=alfven_admittance,
+        pedersen_impedance=pedersen_conductance_dynamic,
+    )
+)
 print(f"reflection_coef:{ionospheric_reflection_coefficient}")
 
-phase_vary_range = alfven.calculate_electric_magnetic_field_phase_difference_range(ionospheric_reflection_coefficient)
+phase_vary_range = alfven.calculate_electric_magnetic_field_phase_difference_range(
+    ionospheric_reflection_coefficient
+)
 print(f"phase_vary_range: {phase_vary_range}")
 
 # %% 2nd plot: define
@@ -505,7 +521,7 @@ fig, axes = plot_gridded_panels(
     legend_fontsize=9,
     annotation_fontsize=8,
     panel_label_fontsize=11,
-    rotate_xticklabels=True
+    rotate_xticklabels=True,
 )
 
 # %% 2nd plot: save
@@ -515,6 +531,6 @@ if save:
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
     print(f"Saving figure to {output_filename_png} (300 DPI)")
 
-#%% if show
+# %% if show
 if show:
     plt.show()

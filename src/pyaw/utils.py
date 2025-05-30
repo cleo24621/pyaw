@@ -4,31 +4,22 @@ from typing import List, Optional
 import numpy as np
 import pandas as pd
 import pywt
-from matplotlib import pyplot as plt
 from numpy import ndarray
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 from scipy import signal
 from scipy.interpolate import interpolate, interp1d
 from scipy.signal import buttord, butter, welch
 
-import pyaw.utils
-
 
 def split_array(array: NDArray, step: int = 11) -> List[NDArray]:
-    """
-    按照step分割array
-
-    Returns:
-        List[NDArray]: 元素是按顺序分割的arrays
-
-    """
+    """Split a 1D or 2D NumPy array into segments of a specified step size along the last axis."""
     if len(array.shape) > 2:
         raise "Cannot handle arrays of shapes with a length greater than 2"
     if len(array.shape) == 1:
         # Split the array
-        result = [array[i: i + step] for i in range(0, len(array) - step, step)]
+        result = [array[i : i + step] for i in range(0, len(array) - step, step)]
         # Add the remaining columns to the last segment
-        remainder = array[step * len(result):]
+        remainder = array[step * len(result) :]
         if remainder.size > 0:
             if len(result) > 0:
                 # Append remaining columns to the last split
@@ -38,8 +29,8 @@ def split_array(array: NDArray, step: int = 11) -> List[NDArray]:
                 result.append(remainder)
     else:
         # Split the 2D array. I haven't encountered this situation yet.
-        result = [array[:, i: i + step] for i in range(0, array.shape[1] - step, step)]
-        remainder = array[:, step * len(result):]
+        result = [array[:, i : i + step] for i in range(0, array.shape[1] - step, step)]
+        remainder = array[:, step * len(result) :]
         if remainder.size > 0:
             if len(result) > 0:
                 result[-1] = np.hstack((result[-1], remainder))
@@ -146,12 +137,12 @@ def split_array_optimized(array: NDArray, step: int = 11) -> List[NDArray]:
 
 
 def get_3arrays(
-        array: NDArray,
+    array: NDArray,
 ):
     """
-    get 3 NDArray from 1 NDArray.
-    the former format is np.array([[a1,b1,c1],[a2,b2,c2],...]),
-    and the latter formats are np.array([a1,a2,...]), np.array([b1,b2,...]), np.array([c1,c2,...])
+    Get 3 NDArray from 1 NDArray.
+    The former format is np.array([[a1,b1,c1],[a2,b2,c2],...]),
+    and the latter formats are np.array([a1,a2,...]), np.array([b1,b2,...]), np.array([c1,c2,...]).
 
     Args:
         array: the former NDArray. such as B_NEC column of the df_b get from MAGx_HR_1B file.
@@ -173,7 +164,7 @@ def get_3arrays(
 
 
 def nan_outliers_by_std_dev(
-        _array: NDArray, std_times: float = 1.0, print_: bool = True
+    _array: NDArray, std_times: float = 1.0, print_: bool = True
 ) -> NDArray:
     """
     Improved outlier detection with NaN handling and zero-std protection
@@ -195,8 +186,8 @@ def nan_outliers_by_std_dev(
             print("Warning: Input array contains only NaN values")
         return array_copy
 
-    mean_val = np.nanmean(array_copy)
-    std_val = np.nanstd(array_copy)
+    mean_val = np.nanmean(array_copy)  # the type of 'mean_val' is float64
+    std_val = np.nanstd(array_copy)  # the type of 'std_val' is float64
 
     # Handle zero standard deviation case
     if np.isclose(std_val, 0):
@@ -206,7 +197,7 @@ def nan_outliers_by_std_dev(
             )
         return array_copy
 
-    threshold = std_times * std_val  # fixme: the 'std_times' and 'std_val' are NDArray?
+    threshold = std_times * std_val
     deviations = np.abs(array_copy - mean_val)
     bursts = deviations > threshold
 
@@ -220,7 +211,7 @@ def nan_outliers_by_std_dev(
 
 
 def normalize_array(
-        arr: NDArray, target_min: float = 0.0, target_max: float = 1.0, clip: bool = False
+    arr: NDArray, target_min: float = 0.0, target_max: float = 1.0, clip: bool = False
 ) -> NDArray:
     """Normalizes a  NumPy array to specified range [target_min, target_max].
 
@@ -229,15 +220,14 @@ def normalize_array(
         target_min: Minimum value of target range (default=0.0)
         target_max: Maximum value of target range (default=1.0)
         clip: Whether to clip values to target range (default=False)
-    Returns:
-        Normalized array with values in [target_min, target_max]. For example:
 
-        normalize_array(np.array([1, 2, 3]), 0, 1)
-        output: [0.  0.5 1. ]
-        normalize_array(np.array([10, 20, 30]), 0, 100)
-        output: [  0.  50. 100.]
-        normalize_array(np.array([1,2,3]),-1,1)
-        output: [-1.  0.  1.]
+    Examples:
+        >>> normalize_array(np.array([1, 2, 3]), 0, 1)
+        [0.  0.5 1. ]
+        >>> normalize_array(np.array([10, 20, 30]), 0, 100)
+        [  0.  50. 100.]
+        >>> normalize_array(np.array([1,2,3]),-1,1)
+        [-1.  0.  1.]
     """
     if target_max <= target_min:
         raise ValueError("target_max must be greater than target_min")
@@ -262,45 +252,34 @@ def normalize_array(
 
 
 def interpolate_missing(
-        data: np.ndarray, timestamps: Optional[np.ndarray] = None, kind: str = "linear"
+    data: np.ndarray, timestamps: Optional[np.ndarray] = None, kind: str = "linear"
 ) -> np.ndarray:
-    """
-    Interpolate missing values (NaNs) in 1D arrays, supporting both timestamp-based
-    and index-based interpolation.
+    """Interpolate NaNs in a 1D arrays, supporting both consecutive timestamp-based and number-based interpolation.
 
-    Parameters:
-    -----------
-    data : np.ndarray
-        1D array with NaNs representing missing values
-    timestamps : Optional[np.ndarray[datetime64]], default=None
-        1D array of timestamps for temporal interpolation. If None, uses array indices.
-    kind : str, default='linear'
-        Interpolation method (see scipy.interpolate.interp1d for options)
+    Args:
+        data: 1D array with NaNs representing missing values.
+        timestamps: 1D array of timestamps for temporal interpolation. If None, uses array indices.
+        kind: Interpolation method (see scipy.interpolate.interp1d for options).
 
     Returns:
-    --------
-    np.ndarray
-        Interpolated array with NaNs replaced
+        Interpolated array with NaNs replaced.
 
     Raises:
-    -------
-    ValueError:
-        - If data is not 1D
-        - If timestamps shape doesn't match data
-        - If fewer than 2 non-NaN values
+        ValueError:
+            - If data is not 1D
+            - If timestamps shape doesn't match data
+            - If fewer than 2 non-NaN values
 
     Examples:
-    ---------
-    # Index-based interpolation
-    >>> data = np.array([1, np.nan, 3])
-    >>> interpolate_missing(data)
-    array([1., 2., 3.])
-
-    # Temporal interpolation
-    >>> timestamps = np.array(['2023-01-01', '2023-01-02', '2023-01-03'], dtype='datetime64[D]')
-    >>> values = np.array([10, np.nan, 30])
-    >>> interpolate_missing(values, timestamps)
-    array([10., 20., 30.])
+        >>> # number-based interpolation
+        >>> data = np.array([1, np.nan, 3])
+        >>> interpolate_missing(data)
+        array([1., 2., 3.])
+        >>> # Temporal interpolation
+        >>> timestamps = np.array(['2023-01-01', '2023-01-02', '2023-01-03'], dtype='datetime64[D]')
+        >>> values = np.array([10, np.nan, 30])
+        >>> interpolate_missing(values, timestamps)
+        array([10., 20., 30.])
     """
     # Validate input array
     if data.ndim != 1:
@@ -340,35 +319,25 @@ def interpolate_missing(
 
 
 def move_average(
-        array: NDArray, window: int, center: bool = True, min_periods: int | None = 1
+    _array: NDArray, window: int, center: bool = True, min_periods: int | None = 1
 ) -> NDArray:
     """
-    在用于电场和磁场信号时，窗口长度一般对应于事件的长度，如20s。
-    :param min_periods: the 'min_periods' parameter of the series.rolling() function
-    :param center: the 'center' parameter of the series.rolling() function
-    :param window: the window of the moving average. equal to fs * (the seconds of the window), and the windows must be an integer.
-    :param array: the array to process
-    :return: the array with moving average
+    Args:
+        _array: the original array.
+
+    Returns:
+        The array with moving average.
     """
     assert type(window) == int, "window must be an integer"
-    array_series = pd.Series(array)
+    array_series = pd.Series(_array)
     array_series_mov_ave = array_series.rolling(
         window=window, center=center, min_periods=min_periods
     ).mean()  # 'center=True' 得到的结果等于‘结果.mean()=0’，即经过b-b.mean()（baseline correction）
     return array_series_mov_ave.values
 
 
-def set_bursts_nan_diff(
-        series, threshold, print_: bool = True
-):
-    """
-    set the value of bursts to nan
-    other method: series_copy[(np.abs(series_copy) / np.abs(series_copy).mean()) > 10] = np.nan
-    :param series:
-    :param threshold:
-    :param print_:
-    :return:
-    """
+def set_bursts_nan_diff(series, threshold, print_: bool = True):
+    """Set the value of bursts to NaN."""
     series_copy = series.copy()
     diff = series_copy.diff()
     # 设置一个突变检测阈值
@@ -381,35 +350,44 @@ def set_bursts_nan_diff(
 
 
 def wavelet_smooth(
-        series_: pd.Series, wavelet="db4", level=6, threshold=0.2, mode="soft"
+    series_: pd.Series, wavelet="db4", level=6, threshold=0.2, mode="soft"
 ) -> pd.Series:
     # process nan
     print(f"The number of NaN values: {series_.isna().sum()}")
     series_ = series_.interpolate(method="linear")
+
     # 使用小波变换进行多尺度分解
     wavelet = wavelet  # 选择小波函数，例如 'db4' (Daubechies)
     coefficients = pywt.wavedec(
         series_, wavelet, level=level
     )  # 进行离散小波分解，设定分解层数
+
     # 处理高频细节系数，设置某些高频部分为零，以达到平滑效果
     threshold = threshold  # 设置阈值
     coefficients[1:] = [
         pywt.threshold(c, threshold, mode=mode) for c in coefficients[1:]
     ]
+
     # 使用处理后的系数重构信号
     smoothed_signal = pywt.waverec(coefficients, wavelet)
+
     return smoothed_signal
 
 
 def time_align_high2low(
-        arr_high: NDArray, arr_high_index: NDArray, arr_low_index: NDArray
+    arr_high: NDArray, arr_high_index: NDArray, arr_low_index: NDArray
 ) -> NDArray:
-    """
-    signal_high aligned to signal_low using linear interpolation.
-    :param arr_low_index: index of arr_low
-    :param arr_high_index: index of arr_high
-    :param arr_high: index is pd.Timestamps type. with high sample rate, so long data length, like swarm vfm50 magnetic data
-    :return: index is pd.Timestamps type. signal_high aligned to signal_low.
+    """Signal_high aligned to signal_low using linear interpolation.
+
+    Args:
+        arr_high: 1D array of high sample rate signal values.
+        arr_high_index: 1D array of timestamps corresponding to arr_high (the timestamps should be consecutive)
+        (the type of timestamp should be pd.Timestamp).
+        arr_low_index: 1D array of timestamps corresponding to arr_low (the timestamps should be consecutive)
+        (the type of timestamp should be pd.Timestamp).
+
+    Returns:
+        1D array of signal_high values aligned to signal_low timestamps.
     """
     interp_func = interp1d(
         arr_high_index.astype("int64"),
@@ -417,17 +395,17 @@ def time_align_high2low(
         kind="linear",
         fill_value="extrapolate",
     )
+
     return interp_func(arr_low_index.astype("int64"))
 
 
 def get_middle_element(_list):
-    """
-    :param _list: list or NDArray
-    :return:
-    """
+    """Get the middle element of a list."""
     n = len(_list)
+
     if n == 0:
         return None  # Handle the case of an empty list
+
     mid = n // 2
     if n % 2 == 0:  # Even number of elements
         return _list[mid - 1]  # Return the former one of the two middle elements
@@ -436,7 +414,7 @@ def get_middle_element(_list):
 
 
 def customize_butter(fs, f_t, f_z, type="lowpass"):
-    """
+    """customize 'scipy.signal.butter()'.
 
     Args:
         fs: 采样率 (Hz)
@@ -445,7 +423,7 @@ def customize_butter(fs, f_t, f_z, type="lowpass"):
         type: ‘lowpass’, ‘highpass’, ‘bandpass’
 
     Returns:
-
+        The customized butterworth filter coefficients b, a.
     """
     # 归一化频率
     wp = f_t / (fs / 2)
@@ -456,14 +434,14 @@ def customize_butter(fs, f_t, f_z, type="lowpass"):
     return butter(order, wn, type)
 
 
-def get_phase_histogram2d(
-        frequencies: NDArray, phase_diffs: NDArray, num_bins: int
-):
-    """
-    :param frequencies: 1d
-    :param phase_diffs: 2d
-    :param num_bins:
-    :return: 1d ndarray, 2d ndarray
+def get_phase_histogram2d(frequencies: NDArray, phase_diffs: NDArray, num_bins: int):
+    """Get the histogram of phase differences for each frequency.
+
+    Args:
+        frequencies: 1D array of frequencies.
+        phase_diffs: 2D array of phase differences, where one row corresponds to the input frequencies,
+        the another corresponds to the times?
+        num_bins: number of bins for the histogram?
     """
     phase_bins = np.linspace(-180, 180, num_bins + 1)
     hist_counts = np.zeros((len(frequencies), num_bins))  # 2个轴分别为相位差和频率
@@ -475,26 +453,15 @@ def get_phase_histogram2d(
 
 
 def get_ratio_histogram2d(frequencies: NDArray, ratio_bins: NDArray, bins: NDArray):
-    """
-    :param frequencies: 1d
-    :param ratio_bins: 2d. different from phase_bins that is in [-180, 180], ratio_bins is in [0, max(ratio)] or [0,percentile95(ratio)] or other reasonable value.
-    :param bins: 1d
-    :return: 2d ndarray
-    """
+    """Refer to 'get_phase_histogram2d'."""
     hist_counts = np.zeros((len(frequencies), len(bins) - 1))
     for i, _ in enumerate(frequencies):
         hist_counts[i], _ = np.histogram(ratio_bins[i], bins=bins)
     return hist_counts
 
 
-def get_phase_histogram_f_ave(
-        phase_bins: ndarray, phase_histogram2d: ndarray
-):
-    """
-    :param phase_bins: shape should be (n,)
-    :param phase_histogram2d: shape should be (m,n-1)
-    :return:
-    """
+def get_phase_histogram_f_ave(phase_bins: ndarray, phase_histogram2d: ndarray):
+    """Refer to 'get_phase_histogram2d'."""
     phases = []
     for i in range(len(phase_bins) - 1):
         phases.append((phase_bins[i + 1] + phase_bins[i]) / 2)
@@ -508,65 +475,56 @@ def get_phase_histogram_f_ave(
     return np.array(phases_ave)
 
 
-class FFT:
-    """
-    a class to get fft of a signal of sampling frequency fs
-    """
+class CustomizedFFT:
+    """Get the fft of a signal."""
 
     def __init__(self, array: NDArray, fs: float):
+        """
+
+        Args:
+            array: 1D array of the signal values.
+            fs: the sampling rate of the signal (Hz).
+        """
         self.array = array
         self.fs = fs
 
     def get_fft(self) -> tuple[NDArray, NDArray, NDArray]:
-        """
-        Only return the data of positive frequencies.
-        (note: because the returned frequencies are determined by the length of the signal and the sampling rate,
-        the previous frequencies returned by the high sampling rate signal are exactly the same as the frequencies of
-        the low sampling rate signal.)
-        Returns:
+        """Only return the data of positive frequencies.
 
+        Note:
+            Because the returned frequencies are determined by the length of the signal and the sampling rate,
+            the previous frequencies returned by the high sampling rate signal are exactly the same as
+            the frequencies of the low sampling rate signal.
         """
         n = len(self.array)
         fft_values = np.fft.fft(self.array)  # fft
         magnitudes = np.abs(fft_values)  # magnitude of fft
         phases = np.angle(fft_values)  # phase of fft
         frequencies = np.fft.fftfreq(n, d=1 / self.fs)  # frequencies
+
         # only positive frequencies
         return frequencies[: n // 2], magnitudes[: n // 2], phases[: n // 2]
 
-    def plot_fft(
-            self, figsize=(10, 6), title="fft"
-    ):  # todo: 绘图调用修改后，删除这个方法
-        frequencies, amps, _ = self.get_fft()
-        fig = plt.figure(figsize=figsize)
-        plt.plot(frequencies, amps, color="red")
-        plt.xscale("linear")
-        plt.yscale("log")
-        plt.xlabel("Frequency (Hz)")
-        plt.ylabel("Amplitude Spectra")
-        plt.grid(which="both", linestyle="--", linewidth=0.5)
-        plt.title(f"{title}: (fs={self.fs})")
-        plt.show()
-        return fig
 
-
-class PSD:
-    """
-    a class to get psd of a signal of sampling frequency fs using welch method.
-    default 'density'
-    (note: 返回的频率由更多参数决定)
-    """
+class CustomizedWelch:
+    """Get the customized 'scipy.signal.welch()' of a signal."""
 
     def __init__(
-            self,
-            array: NDArray,
-            fs: float,
-            nperseg: Optional[int] = None,
-            noverlap: Optional[int] = None,
-            window: Optional[str] = "hann",
-            scaling: Optional[str] = "density",
-            nfft: Optional[int] = None,
+        self,
+        array: NDArray,
+        fs: float,
+        nperseg: Optional[int] = None,
+        noverlap: Optional[int] = None,
+        window: Optional[str] = "hann",
+        scaling: Optional[str] = "density",
+        nfft: Optional[int] = None,
     ):
+        """Initialize the CustomizedWelch class.
+
+        Args:
+            array: 1D array of the signal values.
+            fs: the sampling rate of the signal (Hz).
+        """
         self.array = array
         self.fs = fs
         self.nperseg = nperseg
@@ -579,11 +537,9 @@ class PSD:
         """
 
         Returns:
-            frequencies: Array of sample frequencies.
-            Pxx: Power spectral density or power spectrum of x.
-
+            The 1D array of sample frequencies and the 1D array of power spectral density or power spectrum.
         """
-        frequencies, Pxx = welch(
+        frequencies, pxx = welch(
             self.array,
             fs=self.fs,
             nperseg=self.nperseg,
@@ -592,31 +548,29 @@ class PSD:
             scaling=self.scaling,
             nfft=self.nfft,
         )
-        return frequencies, Pxx
+        return frequencies, pxx
 
 
-class CWT:
-    """
-    连续小波变换
-    """
+class CustomizedCWT:
+    """Customized a Continuous Wavelet Transform."""
 
     def __init__(
-            self,
-            arr1: NDArray,
-            arr2: NDArray,
-            scales: NDArray = np.arange(1, 128),
-            wavelet: str = "cmor1.5-1.0",
-            fs: float = 16.0,
+        self,
+        arr1: NDArray,
+        arr2: NDArray,
+        scales: NDArray = np.arange(1, 128),
+        wavelet: str = "cmor1.5-1.0",
+        fs: float = 16.0,
     ) -> None:
         """
-        signal1 and signal2 are aligned in time.
 
         Args:
-            arr1:
-            arr2:
-            scales:
-            wavelet:
-            fs:
+            arr1: The 1D array of the first signal values.
+            arr2: The 1D array of the second signal values.
+            fs: the sampling rate of the signals (Hz).
+
+        Notes:
+            Signal1 and signal2 are aligned in time.
         """
         self.arr1 = arr1
         self.arr2 = arr2
@@ -625,6 +579,13 @@ class CWT:
         self.sampling_period = 1 / fs
 
     def get_cross_spectral(self):
+        """Get the cross spectral density of the two signals.
+
+        Returns:
+            2D array of the modulus of the cross spectral density.
+            2D array of the phase of the cross spectral density.
+            1D array of frequencies corresponding to the scales.
+        """
         coefficients_f, frequencies = pywt.cwt(
             self.arr1, self.scales, self.wavelet, sampling_period=self.sampling_period
         )  # CWT for signal1
@@ -638,22 +599,23 @@ class CWT:
 
 
 def get_coherence(
-        Zxx1: NDArray, Zxx2: NDArray, cpsd_12: NDArray, step: int = 11
+    zxx1: NDArray, zxx2: NDArray, cpsd_12: NDArray, step: int = 11
 ) -> NDArray:
-    """
-    The times and frequencies corresponding to Zxx1 and Zxx2 should be the same.
-    Zxx1 can be Zxx_e or Zxx_b, the order doesn't affect the result.
+    """Get the average coherence magnitude over frequency for time segments.
 
     Args:
-        Zxx1: Spectrogram or stft of x (refer to scipy doc).
-        Zxx2: ~
+        zxx1: Spectrogram or stft of x (refer to scipy doc).
+        zxx2: ~
         cpsd_12: the cross power spectral density of signal1 (array1) and signal2 (array2).
         step: Zxx1, Zxx2, cpsd_12 的拆分间隔
+
+    Notes:
+        The times and frequencies corresponding to Zxx1 and Zxx2 should be the same.
+        Zxx1 can be Zxx_e or Zxx_b, the order doesn't affect the result.
     """
-    split_array = pyaw.utils.split_array
     cpsd12_split = split_array(cpsd_12, step=step)  # ls
-    denominator1ls = split_array(np.abs(Zxx1 ** 2), step=step)
-    denominator2ls = split_array(np.abs(Zxx2 ** 2), step=step)
+    denominator1ls = split_array(np.abs(zxx1**2), step=step)
+    denominator2ls = split_array(np.abs(zxx2**2), step=step)
 
     coherence_f = []
     for i in range(len(cpsd12_split)):
@@ -682,103 +644,104 @@ def get_coherence(
 
 
 def get_coherence_optimized(
-        Zxx1: NDArray, Zxx2: NDArray, cpsd_12: NDArray, step: int = 11
+    zxx1: NDArray, zxx2: NDArray, cpsd_12: NDArray, step: int = 11
 ) -> NDArray:
-    """
-    Calculates the average coherence magnitude over frequency for time segments.
-
-    Assumes Zxx1, Zxx2, and cpsd_12 have the same shape (n_freqs, n_times)
-    and correspond to the same frequencies and time points.
-
-    The calculation averages the complex coherence over time windows of size 'step'
-    for each frequency, takes the magnitude of this average complex coherence,
-    and then averages these magnitudes across all frequencies for each time window.
-
-    Args:
-        Zxx1: STFT result for signal 1 (n_freqs, n_times).
-        Zxx2: STFT result for signal 2 (n_freqs, n_times).
-        cpsd_12: Cross power spectral density between signal 1 and 2 (n_freqs, n_times).
-        step: The size of the non-overlapping time windows (number of time points)
-              over which to average.
-
-    Returns:
-        NDArray[np.float64]: An array containing the average coherence magnitude
-                             for each time segment (shape: n_segments,).
-
-    Raises:
-        ValueError: If input shapes are inconsistent or step size is invalid.
-    """
-    if not (Zxx1.shape == Zxx2.shape == cpsd_12.shape):
-        raise ValueError(
-            "Input arrays Zxx1, Zxx2, and cpsd_12 must have the same shape."
-        )
-    if Zxx1.ndim != 2:
-        raise ValueError("Input arrays must be 2-dimensional (n_freqs, n_times).")
-    if step <= 0:
-        raise ValueError("step must be a positive integer.")
-
-    n_freqs, n_times = Zxx1.shape
-
-    # Determine the number of full segments and the truncated time length
-    n_segments = n_times // step
-    if n_segments == 0:
-        raise ValueError(
-            f"step size ({step}) is larger than the time dimension ({n_times}). No full segments."
-        )
-
-    n_times_trunc = n_segments * step
-
-    if n_times_trunc != n_times:
-        warnings.warn(
-            f"Time dimension ({n_times}) not perfectly divisible by step ({step}). "
-            f"Truncating to {n_times_trunc} time points ({n_segments} segments).",
-            stacklevel=2,
-        )
-
-    # Calculate Power Spectral Densities (PSD)
-    # Use np.abs(... )**2 for potentially better numerical stability/readability
-    pxx = np.abs(Zxx1[:, :n_times_trunc]) ** 2
-    pyy = np.abs(Zxx2[:, :n_times_trunc]) ** 2
-    cpsd_trunc = cpsd_12[:, :n_times_trunc]  # Use truncated CPSD
-
-    # Reshape arrays to separate segments: (n_freqs, n_segments, step)
-    pxx_segmented = pxx.reshape(n_freqs, n_segments, step)
-    pyy_segmented = pyy.reshape(n_freqs, n_segments, step)
-    cpsd_segmented = cpsd_trunc.reshape(n_freqs, n_segments, step)
-
-    # Average over the time window (axis=2) for each segment and frequency
-    pxx_avg = pxx_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments)
-    pyy_avg = pyy_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments)
-    cpsd_avg = cpsd_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments)
-
-    # Calculate the denominator: sqrt(mean(Pxx) * mean(Pyy))
-    # Use np.maximum to avoid sqrt of potentially tiny negative numbers due to precision
-    denominator_squared = np.maximum(0, pxx_avg * pyy_avg)
-    denominator = np.sqrt(denominator_squared)
-
-    # Calculate complex coherence per frequency per segment
-    # |Coherence|^2 = |mean(CPSD)|^2 / (mean(Pxx) * mean(Pyy))
-    # Complex Coherence = mean(CPSD) / sqrt(mean(Pxx) * mean(Pyy))
-    complex_coherence_f = np.divide(
-        cpsd_avg,
-        denominator,
-        out=np.zeros_like(cpsd_avg, dtype=complex),  # Output array for result
-        where=denominator != 0,  # Condition for division
-    )
-
-    # Calculate magnitude of complex coherence (this is coherence, 0 to 1)
-    coherence_magnitude_f = np.abs(complex_coherence_f)  # Shape: (n_freqs, n_segments)
-
-    # Average coherence magnitude across frequencies (axis=0) for each segment
-    avg_coherence_per_segment = coherence_magnitude_f.mean(
-        axis=0
-    )  # Shape: (n_segments,)
-
-    return avg_coherence_per_segment
+    pass
+    # """
+    # Calculates the average coherence magnitude over frequency for time segments.
+    #
+    # Assumes Zxx1, Zxx2, and cpsd_12 have the same shape (n_freqs, n_times)
+    # and correspond to the same frequencies and time points.
+    #
+    # The calculation averages the complex coherence over time windows of size 'step'
+    # for each frequency, takes the magnitude of this average complex coherence,
+    # and then averages these magnitudes across all frequencies for each time window.
+    #
+    # Args:
+    #     zxx1: STFT result for signal 1 (n_freqs, n_times).
+    #     zxx2: STFT result for signal 2 (n_freqs, n_times).
+    #     cpsd_12: Cross power spectral density between signal 1 and 2 (n_freqs, n_times).
+    #     step: The size of the non-overlapping time windows (number of time points)
+    #           over which to average.
+    #
+    # Returns:
+    #     NDArray[np.float64]: An array containing the average coherence magnitude
+    #                          for each time segment (shape: n_segments,).
+    #
+    # Raises:
+    #     ValueError: If input shapes are inconsistent or step size is invalid.
+    # """
+    # if not (zxx1.shape == zxx2.shape == cpsd_12.shape):
+    #     raise ValueError(
+    #         "Input arrays Zxx1, Zxx2, and cpsd_12 must have the same shape."
+    #     )
+    # if zxx1.ndim != 2:
+    #     raise ValueError("Input arrays must be 2-dimensional (n_freqs, n_times).")
+    # if step <= 0:
+    #     raise ValueError("step must be a positive integer.")
+    #
+    # n_freqs, n_times = zxx1.shape
+    #
+    # # Determine the number of full segments and the truncated time length
+    # n_segments = n_times // step
+    # if n_segments == 0:
+    #     raise ValueError(
+    #         f"step size ({step}) is larger than the time dimension ({n_times}). No full segments."
+    #     )
+    #
+    # n_times_trunc = n_segments * step
+    #
+    # if n_times_trunc != n_times:
+    #     warnings.warn(
+    #         f"Time dimension ({n_times}) not perfectly divisible by step ({step}). "
+    #         f"Truncating to {n_times_trunc} time points ({n_segments} segments).",
+    #         stacklevel=2,
+    #     )
+    #
+    # # Calculate Power Spectral Densities (PSD)
+    # # Use np.abs(... )**2 for potentially better numerical stability/readability
+    # pxx = np.abs(zxx1[:, :n_times_trunc]) ** 2
+    # pyy = np.abs(zxx2[:, :n_times_trunc]) ** 2
+    # cpsd_trunc = cpsd_12[:, :n_times_trunc]  # Use truncated CPSD
+    #
+    # # Reshape arrays to separate segments: (n_freqs, n_segments, step)
+    # pxx_segmented = pxx.reshape(n_freqs, n_segments, step)
+    # pyy_segmented = pyy.reshape(n_freqs, n_segments, step)
+    # cpsd_segmented = cpsd_trunc.reshape(n_freqs, n_segments, step)
+    #
+    # # Average over the time window (axis=2) for each segment and frequency
+    # pxx_avg = pxx_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments)
+    # pyy_avg = pyy_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments)
+    # cpsd_avg = cpsd_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments)
+    #
+    # # Calculate the denominator: sqrt(mean(Pxx) * mean(Pyy))
+    # # Use np.maximum to avoid sqrt of potentially tiny negative numbers due to precision
+    # denominator_squared = np.maximum(0, pxx_avg * pyy_avg)
+    # denominator = np.sqrt(denominator_squared)
+    #
+    # # Calculate complex coherence per frequency per segment
+    # # |Coherence|^2 = |mean(CPSD)|^2 / (mean(Pxx) * mean(Pyy))
+    # # Complex Coherence = mean(CPSD) / sqrt(mean(Pxx) * mean(Pyy))
+    # complex_coherence_f = np.divide(
+    #     cpsd_avg,
+    #     denominator,
+    #     out=np.zeros_like(cpsd_avg, dtype=complex),  # Output array for result
+    #     where=denominator != 0,  # Condition for division
+    # )
+    #
+    # # Calculate magnitude of complex coherence (this is coherence, 0 to 1)
+    # coherence_magnitude_f = np.abs(complex_coherence_f)  # Shape: (n_freqs, n_segments)
+    #
+    # # Average coherence magnitude across frequencies (axis=0) for each segment
+    # avg_coherence_per_segment = coherence_magnitude_f.mean(
+    #     axis=0
+    # )  # Shape: (n_segments,)
+    #
+    # return avg_coherence_per_segment
 
 
 def get_coherence_optimized_no_trunc(
-        Zxx1: NDArray, Zxx2: NDArray, cpsd_12: NDArray, step: int = 11
+    Zxx1: NDArray, Zxx2: NDArray, cpsd_12: NDArray, step: int = 11
 ) -> NDArray[np.float64]:
     """
     Calculates the average coherence magnitude over frequency for time segments,
@@ -901,18 +864,18 @@ def get_coherence_optimized_no_trunc(
 
 
 def calculate_segmented_coherence(
-        datetimes: NDArray[np.datetime64],
-        x: NDArray[np.float64],
-        y: NDArray[np.float64],
-        fs: float,
-        segment_length_sec: float = None,  # Define segment length in seconds
-        nperseg: int = None,  # OR define segment length by samples
-        nfft_coh: int = None,  # nfft for coherence calc within segment
-        window_coh: str = "hann",  # Window for coherence calc within segment
-        noverlap_coh: int = None,  # Overlap for coherence calc within segment (usually None for Welch/CSD)
-        freq_range: tuple[
-            float, float
-        ] = None,  # Optional: (fmin, fmax) to average coherence over
+    datetimes: NDArray[np.datetime64],
+    x: NDArray[np.float64],
+    y: NDArray[np.float64],
+    fs: float,
+    segment_length_sec: float = None,  # Define segment length in seconds
+    nperseg: int = None,  # OR define segment length by samples
+    nfft_coh: int = None,  # nfft for coherence calc within segment
+    window_coh: str = "hann",  # Window for coherence calc within segment
+    noverlap_coh: int = None,  # Overlap for coherence calc within segment (usually None for Welch/CSD)
+    freq_range: tuple[
+        float, float
+    ] = None,  # Optional: (fmin, fmax) to average coherence over
 ) -> tuple[NDArray[np.datetime64], NDArray[np.float64]]:
     """
     Calculates average coherence over frequency for distinct time segments.
@@ -1081,12 +1044,12 @@ def calculate_segmented_coherence(
         # Calculate midpoint time for the segment
         # Midpoint calculation more robust for datetime64
         mid_time_ns = (
-                dt_segment[0].astype("datetime64[ns]").astype(np.int64)
-                + (
-                        dt_segment[-1].astype("datetime64[ns]").astype(np.int64)
-                        - dt_segment[0].astype("datetime64[ns]").astype(np.int64)
-                )
-                // 2
+            dt_segment[0].astype("datetime64[ns]").astype(np.int64)
+            + (
+                dt_segment[-1].astype("datetime64[ns]").astype(np.int64)
+                - dt_segment[0].astype("datetime64[ns]").astype(np.int64)
+            )
+            // 2
         )
         mid_time = mid_time_ns.astype("datetime64[ns]")
 
@@ -1100,16 +1063,16 @@ def calculate_segmented_coherence(
 
 
 def calculate_segmented_complex_coherency(  # Renamed function
-        datetimes: NDArray[np.datetime64],
-        x: NDArray[np.float64],
-        y: NDArray[np.float64],
-        fs: float,
-        segment_length_sec: float = None,
-        nperseg: int = None,
-        nfft_coh: int = None,
-        window_coh: str = "hann",
-        noverlap_coh: int = None,
-        freq_range: tuple[float, float] = None,
+    datetimes: NDArray[np.datetime64],
+    x: NDArray[np.float64],
+    y: NDArray[np.float64],
+    fs: float,
+    segment_length_sec: float = None,
+    nperseg: int = None,
+    nfft_coh: int = None,
+    window_coh: str = "hann",
+    noverlap_coh: int = None,
+    freq_range: tuple[float, float] = None,
 ) -> tuple[NDArray[np.datetime64], NDArray[np.complex128]]:  # Changed return type
     """
     Calculates average COMPLEX COHERENCY over frequency for distinct time segments.
@@ -1278,12 +1241,12 @@ def calculate_segmented_complex_coherency(  # Renamed function
 
         # Calculate midpoint time (same as before)
         mid_time_ns = (
-                dt_segment[0].astype("datetime64[ns]").astype(np.int64)
-                + (
-                        dt_segment[-1].astype("datetime64[ns]").astype(np.int64)
-                        - dt_segment[0].astype("datetime64[ns]").astype(np.int64)
-                )
-                // 2
+            dt_segment[0].astype("datetime64[ns]").astype(np.int64)
+            + (
+                dt_segment[-1].astype("datetime64[ns]").astype(np.int64)
+                - dt_segment[0].astype("datetime64[ns]").astype(np.int64)
+            )
+            // 2
         )
         mid_time = mid_time_ns.astype("datetime64[ns]")
 

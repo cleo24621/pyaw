@@ -117,9 +117,6 @@ spectrogram_window_seconds = 4
 nperseg = int(spectrogram_window_seconds * fs)
 
 
-
-
-
 # %% preset region parameters for plot annoatations, labels and so on
 st_dy = np.datetime64("2016-03-11 06:47:35")
 et_dy = np.datetime64("2016-03-11 06:47:55")
@@ -138,10 +135,10 @@ delta_B_E_align_sta = delta_B_E_align[t_mask_sta]
 E_north_sta = E_north[t_mask_sta]
 
 
-#%% Region: CWT for IAR
+# %% Region: CWT for IAR
 import pywt
 
-fs=16
+fs = 16
 dt = 1 / fs  # 采样间隔
 wavelet = "cmor1.5-1.0"
 fc = pywt.central_frequency(wavelet)  # 获取中心频率
@@ -150,16 +147,24 @@ a_min = fc / (8 * dt)  # 对应 8 Hz
 a_max = fc / (0.1 * dt)  # 对应 0.1 Hz
 scales = np.arange(a_min, a_max, 0.1)  # 生成尺度数组
 
-cwt_eb_dy = pyaw.utils.CWT(E_north_dy, delta_B_E_align_dy, scales=scales, fs=fs, wavelet=wavelet)
+cwt_eb_dy = pyaw.utils.CustomizedCWT(
+    E_north_dy, delta_B_E_align_dy, scales=scales, fs=fs, wavelet=wavelet
+)
 cwt_eb_m_dy, cwt_eb_p_dy, cwt_eb_f_dy = cwt_eb_dy.get_cross_spectral()
 
 num_bins = 30
-cwt_eb_p_bins_dy, cwt_eb_p_histogram2d_dy = pyaw.utils.get_phase_histogram2d(cwt_eb_f_dy, cwt_eb_p_dy, num_bins)
+cwt_eb_p_bins_dy, cwt_eb_p_histogram2d_dy = pyaw.utils.get_phase_histogram2d(
+    cwt_eb_f_dy, cwt_eb_p_dy, num_bins
+)
 
-cwt_eb_sta = pyaw.utils.CWT(E_north_sta, delta_B_E_align_sta, scales=scales, fs=fs, wavelet=wavelet)
+cwt_eb_sta = pyaw.utils.CustomizedCWT(
+    E_north_sta, delta_B_E_align_sta, scales=scales, fs=fs, wavelet=wavelet
+)
 cwt_eb_m_sta, cwt_eb_p_sta, cwt_eb_f_sta = cwt_eb_sta.get_cross_spectral()
 
-cwt_eb_p_bins_sta, cwt_eb_p_histogram2d_sta = pyaw.utils.get_phase_histogram2d(cwt_eb_f_sta, cwt_eb_p_sta, num_bins)
+cwt_eb_p_bins_sta, cwt_eb_p_histogram2d_sta = pyaw.utils.get_phase_histogram2d(
+    cwt_eb_f_sta, cwt_eb_p_sta, num_bins
+)
 
 
 # #%% 1st plot
@@ -178,10 +183,15 @@ cwt_eb_p_bins_sta, cwt_eb_p_histogram2d_sta = pyaw.utils.get_phase_histogram2d(c
 #     print(f"Saving figure to {output_filename_png} (300 DPI)")
 #     fig.savefig(output_path, dpi=300, bbox_inches="tight")
 
-#%% 1st plot: use imshow()
-fig = plt.figure(figsize=(6,4))
+# %% 1st plot: use imshow()
+fig = plt.figure(figsize=(6, 4))
 cwt_eb_p_histogram2d_dy_norm = cwt_eb_p_histogram2d_dy / np.max(cwt_eb_p_histogram2d_dy)
-plt.imshow(cwt_eb_p_histogram2d_dy_norm, extent=(-180, 180, cwt_eb_f_dy[-1], cwt_eb_f_dy[0]), aspect='auto', cmap='jet')
+plt.imshow(
+    cwt_eb_p_histogram2d_dy_norm,
+    extent=(-180, 180, cwt_eb_f_dy[-1], cwt_eb_f_dy[0]),
+    aspect="auto",
+    cmap="jet",
+)
 plt.title("Phase of CWT")
 plt.xlabel("Phase (Degree)")
 plt.ylabel("Frequency [Hz]")

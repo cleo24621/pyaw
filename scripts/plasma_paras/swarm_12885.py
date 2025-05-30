@@ -193,8 +193,8 @@ else:
 
     from utils import coordinate
 
-    rotmat_nec2sc, rotmat_sc2nec = pyaw.satellite.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(
-        VsatN, VsatE
+    rotmat_nec2sc, rotmat_sc2nec = (
+        pyaw.satellite.NEC2SCandSC2NEC.get_rotmat_nec2sc_sc2nec(VsatN, VsatE)
     )
     E_north, E_east = pyaw.satellite.NEC2SCandSC2NEC.do_rotation(
         -Ehx_outlier_interp, -Ehy_outlier_interp, rotmat_sc2nec
@@ -222,14 +222,14 @@ else:
     from utils import spectral
 
     WINDOW = "hann"
-    delta_B_E_align_dy_psd = pyaw.utils.PSD(
+    delta_B_E_align_dy_psd = pyaw.utils.CustomizedWelch(
         delta_B_E_align_dy,
         fs=FS,
         nperseg=nperseg_psd,
         window=WINDOW,
         scaling="density",
     )
-    E_north_dy_psd = pyaw.utils.PSD(
+    E_north_dy_psd = pyaw.utils.CustomizedWelch(
         E_north_dy,
         fs=FS,
         nperseg=nperseg_psd,

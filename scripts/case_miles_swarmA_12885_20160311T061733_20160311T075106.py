@@ -323,28 +323,28 @@ E_north_sta = E_north[t_mask_sta]
 # %% Region: get psd
 nperseg_psd = 64  # same as the 1st spectrogram nperseg
 
-delta_B_E_align_dy_psd = pyaw.utils.PSD(
+delta_B_E_align_dy_psd = pyaw.utils.CustomizedWelch(
     delta_B_E_align_dy,
     fs=fs,
     nperseg=nperseg_psd,
     window=window,
     scaling="density",
 )  # same arguments setting as spectrogram
-E_north_dy_psd = pyaw.utils.PSD(
+E_north_dy_psd = pyaw.utils.CustomizedWelch(
     E_north_dy,
     fs=fs,
     nperseg=nperseg_psd,
     window=window,
     scaling="density",
 )
-delta_B_E_align_sta_psd = pyaw.utils.PSD(
+delta_B_E_align_sta_psd = pyaw.utils.CustomizedWelch(
     delta_B_E_align_sta,
     fs=fs,
     nperseg=nperseg_psd,
     window=window,
     scaling="density",
 )
-E_north_sta_psd = pyaw.utils.PSD(
+E_north_sta_psd = pyaw.utils.CustomizedWelch(
     E_north_sta,
     fs=fs,
     nperseg=nperseg_psd,
@@ -483,7 +483,7 @@ plot_defs[1][0] = {
 plot_defs[1][1] = {
     "plot_type": "line",
     "x_data": frequencies_psd_dy,
-    "y_data_list": [Pxx_E_north_dy,Pxx_delta_B_E_align_dy ],
+    "y_data_list": [Pxx_E_north_dy, Pxx_delta_B_E_align_dy],
     "labels": [r"PSD of $E_{North}$", r"PSD of $\Delta {B_{East}}$"],
     "yscale": "log",  # Use log scale
     "title": "PSD of $\Delta {B_{East}}$ and $E_{North}$",
@@ -579,5 +579,5 @@ if save:
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
     print(f"Saving figure to {output_filename_png} (300 DPI)")
 
-#%% if show
+# %% if show
 plt.show()

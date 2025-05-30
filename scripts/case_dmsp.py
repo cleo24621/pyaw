@@ -18,8 +18,8 @@ from src.pyaw import plot_multi_panel, plot_gridded_panels
 # --- file paths ---
 
 data_dir_path = ProjectConfigs.data_dir_path
-file_name_s3 = 'dmsp-f18_ssies-3_thermal-plasma_201401010124_v01.cdf'  # 一轨
-file_name_ssm = 'dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf'  # 1天
+file_name_s3 = "dmsp-f18_ssies-3_thermal-plasma_201401010124_v01.cdf"  # 一轨
+file_name_ssm = "dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf"  # 1天
 file_path_ssies3 = os.path.join(data_dir_path, file_name_s3)
 file_path_ssm = os.path.join(data_dir_path, file_name_ssm)
 
@@ -30,7 +30,7 @@ df = ssies3_ssm.ssies3_ssm_df
 
 # --- clip df
 # df_gt_50 = df[df['glat'] > 50].copy()
-df_gt_50 = df[df['glat'] < -50].copy()
+df_gt_50 = df[df["glat"] < -50].copy()
 
 # --- set base datetimes
 datetimes = df_gt_50.index.values
@@ -45,12 +45,12 @@ nperseg = int(spectrogram_window_seconds * fs)
 noverlap = nperseg // 2  # 重叠率一般为50%
 
 ##  --- choose a disturb magnetic field and electric field pair. delta_B: East, E: North
-delta_B_E_with_nan = df_gt_50['b1_enu1'].values
-E_north_with_nan = df_gt_50['E_enu2'].values
+delta_B_E_with_nan = df_gt_50["b1_enu1"].values
+E_north_with_nan = df_gt_50["E_enu2"].values
 
 ## --- interpolate Nan
-delta_B_E = interpolate_missing(delta_B_E_with_nan,datetimes)
-E_north = interpolate_missing(E_north_with_nan,datetimes)
+delta_B_E = interpolate_missing(delta_B_E_with_nan, datetimes)
+E_north = interpolate_missing(E_north_with_nan, datetimes)
 
 ## --- get spectrogram
 frequencies, ts, Sxx_b = spectrogram(
@@ -74,7 +74,9 @@ cpsd = Sxx_e * np.conj(Sxx_b)
 # --- get lat and MLT
 
 latitudes = df_gt_50["glat"].values
-mlts = df_gt_50["sc_aacgm_ltime"].values  # note that all column names are lowercase. also get apex
+mlts = df_gt_50[
+    "sc_aacgm_ltime"
+].values  # note that all column names are lowercase. also get apex
 
 #  --- use new method to get Coherency ---
 segment_length_sec = 4  # 越大最后得到的数组的长度越小，取和之前的spectrogram输入的窗口长度是一个不错的选择，但要考虑采样率的影响
@@ -255,7 +257,7 @@ E_north_dy = E_north[t_mask]
 
 nperseg = fs * 8  # renew nperseg
 noverlap = nperseg // 2  # renew noverlap
-delta_B_E_dy_psd = pyaw.utils.PSD(
+delta_B_E_dy_psd = pyaw.utils.CustomizedWelch(
     delta_B_E_dy,
     fs=fs,
     nperseg=nperseg,
@@ -263,7 +265,7 @@ delta_B_E_dy_psd = pyaw.utils.PSD(
     window=window,
     scaling="density",
 )  # same arguments setting as spectrogram
-E_north_dy_psd = pyaw.utils.PSD(
+E_north_dy_psd = pyaw.utils.CustomizedWelch(
     E_north_dy,
     fs=fs,
     nperseg=nperseg,
@@ -312,7 +314,7 @@ delta_B_E_sta = delta_B_E[t_mask]
 E_north_sta = E_north[t_mask]
 
 ## --- pad ---
-delta_B_E_sta_psd = pyaw.utils.PSD(
+delta_B_E_sta_psd = pyaw.utils.CustomizedWelch(
     delta_B_E_sta,
     fs=fs,
     nperseg=nperseg,
@@ -320,7 +322,7 @@ delta_B_E_sta_psd = pyaw.utils.PSD(
     window=window,
     scaling="density",
 )
-E_north_sta_psd = pyaw.utils.PSD(
+E_north_sta_psd = pyaw.utils.CustomizedWelch(
     E_north_sta,
     fs=fs,
     nperseg=nperseg,

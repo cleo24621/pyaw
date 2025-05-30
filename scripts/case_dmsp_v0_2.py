@@ -15,8 +15,8 @@ from src.pyaw import plot_multi_panel, plot_gridded_panels
 # --- file paths ---
 
 data_dir_path = ProjectConfigs.data_dir_path
-file_name_s3 = 'dmsp-f18_ssies-3_thermal-plasma_201401010124_v01.cdf'  # 一轨
-file_name_ssm = 'dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf'  # 1天
+file_name_s3 = "dmsp-f18_ssies-3_thermal-plasma_201401010124_v01.cdf"  # 一轨
+file_name_ssm = "dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf"  # 1天
 file_path_ssies3 = os.path.join(data_dir_path, file_name_s3)
 file_path_ssm = os.path.join(data_dir_path, file_name_ssm)
 
@@ -44,8 +44,10 @@ nperseg = int(spectrogram_window_seconds * fs)
 noverlap = nperseg // 2  # 重叠率一般为50%
 
 ##  --- choose a disturb magnetic field and electric field pair. delta_B: East, E: North
-b_sc2 = df['b1_s3_sc2'].copy().ffill().bfill().values  # not use linear, because too many nan will cause large values
-E_sc1 = df['E_s3_sc1'].copy().ffill().bfill().values
+b_sc2 = (
+    df["b1_s3_sc2"].copy().ffill().bfill().values
+)  # not use linear, because too many nan will cause large values
+E_sc1 = df["E_s3_sc1"].copy().ffill().bfill().values
 assert not np.isnan(b_sc2).any(), "have nan values"
 assert not np.isnan(E_sc1).any(), "have nan values"
 
@@ -81,7 +83,9 @@ cpsd = Sxx_e * np.conj(Sxx_b)
 # --- get lat and MLT
 
 latitudes = df["glat"].values
-mlts = df["sc_aacgm_ltime"].values  # note that all column names are lowercase. also get apex
+mlts = df[
+    "sc_aacgm_ltime"
+].values  # note that all column names are lowercase. also get apex
 
 #  --- use new method to get Coherency ---
 segment_length_sec = 11  # 越大最后得到的数组的长度越小，取和之前的spectrogram输入的窗口长度是一个不错的选择，但要考虑采样率的影响
@@ -262,7 +266,7 @@ E_sc1_dy = E_sc1[t_mask]
 
 nperseg_psd = 256  # renew nperseg
 noverlap_psd = nperseg // 2  # renew noverlap
-b_sc2_dy_psd = pyaw.utils.PSD(
+b_sc2_dy_psd = pyaw.utils.CustomizedWelch(
     b_sc2_dy,
     fs=fs,
     # nperseg=nperseg_psd,
@@ -271,7 +275,7 @@ b_sc2_dy_psd = pyaw.utils.PSD(
     window=window,
     scaling="density",
 )  # same arguments setting as spectrogram
-E_sc1_dy_psd = pyaw.utils.PSD(
+E_sc1_dy_psd = pyaw.utils.CustomizedWelch(
     E_sc1_dy,
     fs=fs,
     # nperseg=nperseg_psd,
@@ -295,10 +299,7 @@ frequencies_spec_dy, ts_dy, Sxx_b_dy = spectrogram(
     mode="complex",
 )
 _, _, Sxx_e_dy = spectrogram(
-    E_sc1_dy, fs=fs, window=window,
-    nperseg=nperseg,
-    noverlap=noverlap,
-    mode="complex"
+    E_sc1_dy, fs=fs, window=window, nperseg=nperseg, noverlap=noverlap, mode="complex"
 )
 
 ts_dt64_dy = datetimes_dy[0] + [np.timedelta64(int(_), "s") for _ in ts_dy]
@@ -324,7 +325,7 @@ b_sc2_sta = b_sc2[t_mask]
 E_sc1_sta = E_sc1[t_mask]
 
 ## --- pad ---
-b_sc2_sta_psd = pyaw.utils.PSD(
+b_sc2_sta_psd = pyaw.utils.CustomizedWelch(
     b_sc2_sta,
     fs=fs,
     # nperseg=nperseg,
@@ -332,7 +333,7 @@ b_sc2_sta_psd = pyaw.utils.PSD(
     window=window,
     scaling="density",
 )
-E_sc1_sta_psd = pyaw.utils.PSD(
+E_sc1_sta_psd = pyaw.utils.CustomizedWelch(
     E_sc1_sta,
     fs=fs,
     # nperseg=nperseg,
@@ -378,9 +379,7 @@ phase_bins_sta, phase_histogram2d_sta = pyaw.utils.get_phase_histogram2d(
 
 # --- ratio ---
 
-eb_ratio_psd_dy = (
-    (Pxx_E_sc1_dy_psd / Pxx_b_sc2_dy_psd) * 1e-3 * 1e9
-)  # transform unit
+eb_ratio_psd_dy = (Pxx_E_sc1_dy_psd / Pxx_b_sc2_dy_psd) * 1e-3 * 1e9  # transform unit
 eb_ratio_psd_sta = (Pxx_E_sc1_sta_psd / Pxx_b_sc2_sta_psd) * 1e-3 * 1e9
 
 # --- lower and upper bound

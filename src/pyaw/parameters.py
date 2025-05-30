@@ -9,10 +9,9 @@ Constants:
     - Boltzmann constant
     - Elementary charge
     - Atomic masses
-    - Particle masses
 
 Functions:
-    - Plasma density calculations
+    - Plasma mass density calculations
     - Alfvén wave parameters
     - Plasma frequencies
     - Gyroradius calculations
@@ -74,8 +73,8 @@ def calculate_plasma_density(
 class Alfven:
     """Class for calculating Alfvén wave related parameters.
 
-    Contains methods for calculating Alfvén velocities, impedance, reflection
-    coefficients and boundaries for dynamic/static regimes.
+    Contains methods for calculating Alfvén velocities, impedance, reflection coefficients
+    and boundaries for dynamic/static regimes.
 
     Attributes:
         vacuum_permeability: Permeability of vacuum in H/m

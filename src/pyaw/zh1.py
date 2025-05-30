@@ -7,11 +7,100 @@ from pandas import DataFrame, Series
 from pymap3d import ecef
 from scipy.interpolate import interpolate
 from scipy.signal import filtfilt, butter, buttord
-from utils.filter import customize_butter
 
 import pyaw.utils
-from src.pyaw import Zh1Configs
-from utils import other
+from utils import customize_butter
+
+# Todo: optimize this file.
+
+FGM_VARS = (
+    "A221",
+    "A222",
+    "A223",
+    "ALTITUDE",
+    "B_FGM1",
+    "B_FGM2",
+    "B_FGM3",
+    "FLAG_MT",
+    "FLAG_SHW",
+    "FLAG_TBB",
+    "GEO_LAT",
+    "GEO_LON",
+    "MAG_LAT",
+    "MAG_LON",
+    "UTC_TIME",
+    "VERSE_TIME",
+)
+SCM_ULF_VARS = (
+    "A231_P",
+    "A231_W",
+    "A232_P",
+    "A232_W",
+    "A233_P",
+    "A233_W",
+    "ALTITUDE",
+    "FLAG",
+    "FREQ",
+    "GEO_LAT",
+    "GEO_LON",
+    "MAG_LAT",
+    "MAG_LON",
+    "PhaseX",
+    "PhaseY",
+    "PhaseZ",
+    "UTC_TIME",
+    "VERSE_TIME",
+    "WORKMODE",
+)
+SCM_ULF_1C_VARS = (
+    "ALTITUDE",
+    "FLAG",
+    "GEO_LAT",
+    "GEO_LON",
+    "MAG_LAT",
+    "MAG_LON",
+    "UTC_TIME",
+    "VERSE_TIME",
+    "WORKMODE",
+)
+SCM_ULF_RESAMPLE_VARS = ["A231_W", "A232_W", "A233_W"]
+EFD_ULF_VARS = (
+    "A111_P",
+    "A111_W",
+    "A112_P",
+    "A112_W",
+    "A113_P",
+    "A113_W",
+    "ALTITUDE",
+    "FREQ",
+    "GEO_LAT",
+    "GEO_LON",
+    "MAG_LAT",
+    "MAG_LON",
+    "UTC_TIME",
+    "VERSE_TIME",
+    "WORKMODE",
+)
+EFD_ULF_1C_VARS = (
+    "ALTITUDE",
+    "GEO_LAT",
+    "GEO_LON",
+    "MAG_LAT",
+    "MAG_LON",
+    "UTC_TIME",
+    "VERSE_TIME",
+    "WORKMODE",
+)
+EFD_ULF_RESAMPLE_VARS = ["A111_W", "A112_W", "A113_W"]
+SCMULF_FS = 1024
+
+EFDULF_FS = 125
+
+# Ascending (south to north); descending (north to south).
+INDICATOR_DESCEND_ASCEND = {
+    "0": "descending",
+    "1": "ascending",
+}
 
 
 class FGM:
@@ -56,7 +145,7 @@ class SCM:
     datetimes: Series
     df1c: DataFrame
 
-    fs = Zh1Configs.scmulf_fs
+    fs = SCMULF_FS
     row_len = 4096  # DataFrame行长度 (fixed)
     new_datetimes_dfs_names = [
         "WORKMODE",
@@ -157,9 +246,6 @@ class SCM:
             self.A233_W_df_split_list,
         )
 
-    def _some_checks(self):
-        assert self.fs % self.target_fs == 0
-
     def _get_dfs(self):
         """
         单个变量数据由DataFrame格式存储，所有变量数据存储在字典中，键对应变量名，值对应相应的DataFrame
@@ -189,7 +275,7 @@ class SCM:
             SCMUlf产品中形状为(n,1)的变量数据。DataFrame的索引为(DatetimeIndex,dtype=pd.Timestamp)，每一列的列名对应变量名，每一列的数据对应变量数据
         """
         dict1c = {}  # key: variable name; value: variable value
-        for key in Zh1Configs.scm_ulf_1c_vars:
+        for key in SCM_ULF_1C_VARS:
             dict1c[key] = self.dfs[key].squeeze().values
         df1c = pd.DataFrame(
             index=self.datetimes.values, data=dict1c
@@ -369,7 +455,7 @@ class SCM:
 
 
 class EFD(SCM):
-    fs = Zh1Configs.efdulf_fs
+    fs = EFDULF_FS
     row_len = 256
     new_datetimes_dfs_names = [
         "WORKMODE",
@@ -403,7 +489,7 @@ class EFD(SCM):
 
         """
         dict1c = {}
-        for key in Zh1Configs.efd_ulf_1c_vars:
+        for key in EFD_ULF_1C_VARS:
             dict1c[key] = self.dfs[key].squeeze().values
         df1c = pd.DataFrame(index=self.datetimes.values, data=dict1c)
         return df1c
@@ -577,12 +663,12 @@ class SCMEFDUlf:
         e_enu2_ls = []
         e_enu3_ls = []
         if (
-                len(self.A111_W_clip) == len(self.A112_W_clip) == len(self.A113_W_clip)
+            len(self.A111_W_clip) == len(self.A112_W_clip) == len(self.A113_W_clip)
         ):  # have the same number of rows
             for (index1, row1), (index2, row2), (index3, row3) in zip(
-                    self.A111_W_clip.iterrows(),
-                    self.A112_W_clip.iterrows(),
-                    self.A113_W_clip.iterrows(),
+                self.A111_W_clip.iterrows(),
+                self.A112_W_clip.iterrows(),
+                self.A113_W_clip.iterrows(),
             ):
                 assert index1 == index2 == index3, "index not equal"
                 lat = self.efd_geo_clip["lat"][index1]
@@ -603,12 +689,12 @@ class SCMEFDUlf:
         b_enu2_ls = []
         b_enu3_ls = []
         if (
-                len(self.A231_W_clip) == len(self.A232_W_clip) == len(self.A233_W_clip)
+            len(self.A231_W_clip) == len(self.A232_W_clip) == len(self.A233_W_clip)
         ):  # have the same number of rows
             for (index1, row1), (index2, row2), (index3, row3) in zip(
-                    self.A231_W_clip.iterrows(),
-                    self.A232_W_clip.iterrows(),
-                    self.A233_W_clip.iterrows(),
+                self.A231_W_clip.iterrows(),
+                self.A232_W_clip.iterrows(),
+                self.A233_W_clip.iterrows(),
             ):
                 assert index1 == index2 == index3, "index not equal"
                 lat = self.scm_geo_clip["lat"][index1]
@@ -678,8 +764,8 @@ class SCMEFDUlf:
         e1_columns = ["e1_enu1", "e1_enu2", "e1_enu3"]
         data_dict = {}
         for (column_name, column_data), (e0_col, e1_col) in zip(
-                self.data[["e_enu1", "e_enu2", "e_enu3"]].items(),
-                zip(e0_columns, e1_columns),
+            self.data[["e_enu1", "e_enu2", "e_enu3"]].items(),
+            zip(e0_columns, e1_columns),
         ):
             arr_mov_ave = pyaw.utils.move_average(
                 column_data.values,
@@ -696,8 +782,8 @@ class SCMEFDUlf:
         b1_columns = ["b1_enu1", "b1_enu2", "b1_enu3"]
         data_dict = {}
         for (column_name, column_data), (b0_col, b1_col) in zip(
-                self.data[["b_enu1", "b_enu2", "b_enu3"]].items(),
-                zip(b0_columns, b1_columns),
+            self.data[["b_enu1", "b_enu2", "b_enu3"]].items(),
+            zip(b0_columns, b1_columns),
         ):
             _ = pyaw.utils.move_average(
                 column_data.values,
@@ -735,13 +821,14 @@ def customize_butter(fs, f_t, f_z, type="lowpass"):
 
 def test_split():
     import os
-    from core import zh1
 
     data_dir_path = r"G:\master\pyaw\data"
     # file_name = "CSES_01_SCM_1_L02_A2_096790_20191031_233256_20191101_000821_000.h5"
-    file_name = "../../data/CSES_01_SCM_1_L02_A2_175381_20210401_012104_20210401_015640_000.h5"
+    file_name = (
+        "../../data/CSES_01_SCM_1_L02_A2_175381_20210401_012104_20210401_015640_000.h5"
+    )
     file_path = os.path.join(data_dir_path, file_name)
-    scm = zh1.SCM(file_path)
+    scm = SCM(file_path)
     # dts = scm.datetimes
     # split_dts = scm.get_split_data(dts)
     scm._check_split()
