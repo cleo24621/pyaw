@@ -39,103 +39,6 @@ def split_array(array: NDArray, step: int = 11) -> List[NDArray]:
     return result
 
 
-def split_array_optimized(array: NDArray, step: int = 11) -> List[NDArray]:
-    """
-    Splits a 1D or 2D NumPy array into segments of a specified step size along the last axis.
-    The last segment will contain any remaining elements/columns, potentially making it
-    larger than 'step'.
-
-    Args:
-        array: The NumPy array (1D or 2D) to split.
-        step: The desired size of each segment along the last axis, except possibly the last.
-               Must be a positive integer.
-
-    Returns:
-        List[NDArray]: A list of NumPy arrays representing the segments. Returns an empty
-                       list if the input array is empty.
-
-    Raises:
-        ValueError: If step is not positive, or if the array dimension is not 1 or 2.
-
-    Examples:
-        arr1d = np.arange(25)
-        split_array_optimized(arr1d, 11)
-        output: [array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10]), array([11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])] # Segments: 11, 14
-
-        arr1d_short = np.arange(5)
-        output:split_array_optimized(arr1d_short, 11)
-        [array([0, 1, 2, 3, 4])] # Only one segment
-
-        arr2d = np.arange(20).reshape(2, 10)
-        split_array_optimized(arr2d, 4)
-        output: [array([[ 0,  1,  2,  3],
-               [10, 11, 12, 13]]), array([[ 4,  5,  6,  7,  8,  9],
-               [14, 15, 16, 17, 18, 19]])] # Segments: 4, 6 columns
-
-        arr2d_exact = np.arange(22).reshape(2, 11)
-        split_array_optimized(arr2d_exact, 11)
-        output: [array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10],
-               [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]])] # Exactly one segment
-
-        arr_empty = np.array([])
-        split_array_optimized(arr_empty, 5)
-        output: []
-    """
-    if not isinstance(step, int) or step <= 0:
-        raise ValueError(f"step must be a positive integer, got {step}")
-
-    ndim = array.ndim
-    if ndim == 0 or ndim > 2:
-        raise ValueError(
-            f"Cannot handle arrays with {ndim} dimensions. Only 1D or 2D arrays are supported."
-        )
-
-    # Handle empty array case
-    if array.size == 0:
-        return []
-
-    # Determine the dimension size to split along
-    if ndim == 1:
-        dim_size = array.shape[0]
-        axis = 0
-    else:  # ndim == 2
-        dim_size = array.shape[1]
-        axis = 1
-
-    results = []
-    # Calculate the number of full segments *before* the potentially larger last one
-    # We iterate up to the start index of the last segment
-    num_leading_segments = (dim_size - 1) // step
-
-    # Helper to create the correct slice object for 1D or 2D
-    def _get_slice(start, end):
-        if ndim == 1:
-            return slice(start, end)
-        else:  # ndim == 2
-            return (slice(None), slice(start, end))  # slice rows, slice columns
-
-    # Add the full leading segments
-    for i in range(num_leading_segments):
-        start = i * step
-        end = start + step
-        results.append(array[_get_slice(start, end)])
-
-    # Add the last segment (contains the last full step + remainder, or just the initial part if array is short)
-    last_segment_start = num_leading_segments * step
-    if last_segment_start < dim_size:  # Check if there's anything left to add
-        results.append(
-            array[_get_slice(last_segment_start, None)]
-        )  # Slice from start to the end
-
-    # Handle the case where the array was shorter than step initially
-    # In this case, num_leading_segments is 0, the loop doesn't run,
-    # last_segment_start is 0, and the full array is added as the only segment.
-    # If dim_size is exactly a multiple of step, the last segment added
-    # will have exactly 'step' size.
-
-    return results
-
-
 def get_3arrays(
     array: NDArray,
 ):
@@ -188,6 +91,8 @@ def nan_outliers_by_std_dev(
 
     mean_val = np.nanmean(array_copy)  # the type of 'mean_val' is float64
     std_val = np.nanstd(array_copy)  # the type of 'std_val' is float64
+    mean_val = np.float64(mean_val)
+    std_val = np.float64(std_val)
 
     # Handle zero standard deviation case
     if np.isclose(std_val, 0):
@@ -223,7 +128,7 @@ def normalize_array(
 
     Examples:
         >>> normalize_array(np.array([1, 2, 3]), 0, 1)
-        [0.  0.5 1. ]
+        [0.  0.5 1.]
         >>> normalize_array(np.array([10, 20, 30]), 0, 100)
         [  0.  50. 100.]
         >>> normalize_array(np.array([1,2,3]),-1,1)
@@ -272,13 +177,13 @@ def interpolate_missing(
 
     Examples:
         >>> # number-based interpolation
-        >>> data = np.array([1, np.nan, 3])
-        >>> interpolate_missing(data)
+        >>> _array = np.array([1, np.nan, 3])
+        >>> interpolate_missing(_array)
         array([1., 2., 3.])
         >>> # Temporal interpolation
-        >>> timestamps = np.array(['2023-01-01', '2023-01-02', '2023-01-03'], dtype='datetime64[D]')
+        >>> _timestamps = np.array(['2023-01-01', '2023-01-02', '2023-01-03'], dtype='datetime64[D]')
         >>> values = np.array([10, np.nan, 30])
-        >>> interpolate_missing(values, timestamps)
+        >>> interpolate_missing(values, _timestamps)
         array([10., 20., 30.])
     """
     # Validate input array
@@ -413,14 +318,14 @@ def get_middle_element(_list):
         return _list[mid]  # Return the single middle element
 
 
-def customize_butter(fs, f_t, f_z, type="lowpass"):
+def customize_butter(fs, f_t, f_z, _type="lowpass"):
     """customize 'scipy.signal.butter()'.
 
     Args:
         fs: 采样率 (Hz)
         f_t: 通带截止频率 (Hz)。低，例如100
         f_z: 阻带截止频率 (Hz)。高，例如200
-        type: ‘lowpass’, ‘highpass’, ‘bandpass’
+        _type: ‘lowpass’, ‘highpass’, ‘bandpass’
 
     Returns:
         The customized butterworth filter coefficients b, a.
@@ -431,7 +336,7 @@ def customize_butter(fs, f_t, f_z, type="lowpass"):
 
     # 计算阶数（默认 gpass=3dB, gstop=40dB）
     order, wn = buttord(wp, ws, 3, 40)
-    return butter(order, wn, type)
+    return butter(order, wn, _type)
 
 
 def get_phase_histogram2d(frequencies: NDArray, phase_diffs: NDArray, num_bins: int):
@@ -643,425 +548,6 @@ def get_coherence(
     return np.array(coherence)
 
 
-def get_coherence_optimized(
-    zxx1: NDArray, zxx2: NDArray, cpsd_12: NDArray, step: int = 11
-) -> NDArray:
-    pass
-    # """
-    # Calculates the average coherence magnitude over frequency for time segments.
-    #
-    # Assumes Zxx1, Zxx2, and cpsd_12 have the same shape (n_freqs, n_times)
-    # and correspond to the same frequencies and time points.
-    #
-    # The calculation averages the complex coherence over time windows of size 'step'
-    # for each frequency, takes the magnitude of this average complex coherence,
-    # and then averages these magnitudes across all frequencies for each time window.
-    #
-    # Args:
-    #     zxx1: STFT result for signal 1 (n_freqs, n_times).
-    #     zxx2: STFT result for signal 2 (n_freqs, n_times).
-    #     cpsd_12: Cross power spectral density between signal 1 and 2 (n_freqs, n_times).
-    #     step: The size of the non-overlapping time windows (number of time points)
-    #           over which to average.
-    #
-    # Returns:
-    #     NDArray[np.float64]: An array containing the average coherence magnitude
-    #                          for each time segment (shape: n_segments,).
-    #
-    # Raises:
-    #     ValueError: If input shapes are inconsistent or step size is invalid.
-    # """
-    # if not (zxx1.shape == zxx2.shape == cpsd_12.shape):
-    #     raise ValueError(
-    #         "Input arrays Zxx1, Zxx2, and cpsd_12 must have the same shape."
-    #     )
-    # if zxx1.ndim != 2:
-    #     raise ValueError("Input arrays must be 2-dimensional (n_freqs, n_times).")
-    # if step <= 0:
-    #     raise ValueError("step must be a positive integer.")
-    #
-    # n_freqs, n_times = zxx1.shape
-    #
-    # # Determine the number of full segments and the truncated time length
-    # n_segments = n_times // step
-    # if n_segments == 0:
-    #     raise ValueError(
-    #         f"step size ({step}) is larger than the time dimension ({n_times}). No full segments."
-    #     )
-    #
-    # n_times_trunc = n_segments * step
-    #
-    # if n_times_trunc != n_times:
-    #     warnings.warn(
-    #         f"Time dimension ({n_times}) not perfectly divisible by step ({step}). "
-    #         f"Truncating to {n_times_trunc} time points ({n_segments} segments).",
-    #         stacklevel=2,
-    #     )
-    #
-    # # Calculate Power Spectral Densities (PSD)
-    # # Use np.abs(... )**2 for potentially better numerical stability/readability
-    # pxx = np.abs(zxx1[:, :n_times_trunc]) ** 2
-    # pyy = np.abs(zxx2[:, :n_times_trunc]) ** 2
-    # cpsd_trunc = cpsd_12[:, :n_times_trunc]  # Use truncated CPSD
-    #
-    # # Reshape arrays to separate segments: (n_freqs, n_segments, step)
-    # pxx_segmented = pxx.reshape(n_freqs, n_segments, step)
-    # pyy_segmented = pyy.reshape(n_freqs, n_segments, step)
-    # cpsd_segmented = cpsd_trunc.reshape(n_freqs, n_segments, step)
-    #
-    # # Average over the time window (axis=2) for each segment and frequency
-    # pxx_avg = pxx_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments)
-    # pyy_avg = pyy_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments)
-    # cpsd_avg = cpsd_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments)
-    #
-    # # Calculate the denominator: sqrt(mean(Pxx) * mean(Pyy))
-    # # Use np.maximum to avoid sqrt of potentially tiny negative numbers due to precision
-    # denominator_squared = np.maximum(0, pxx_avg * pyy_avg)
-    # denominator = np.sqrt(denominator_squared)
-    #
-    # # Calculate complex coherence per frequency per segment
-    # # |Coherence|^2 = |mean(CPSD)|^2 / (mean(Pxx) * mean(Pyy))
-    # # Complex Coherence = mean(CPSD) / sqrt(mean(Pxx) * mean(Pyy))
-    # complex_coherence_f = np.divide(
-    #     cpsd_avg,
-    #     denominator,
-    #     out=np.zeros_like(cpsd_avg, dtype=complex),  # Output array for result
-    #     where=denominator != 0,  # Condition for division
-    # )
-    #
-    # # Calculate magnitude of complex coherence (this is coherence, 0 to 1)
-    # coherence_magnitude_f = np.abs(complex_coherence_f)  # Shape: (n_freqs, n_segments)
-    #
-    # # Average coherence magnitude across frequencies (axis=0) for each segment
-    # avg_coherence_per_segment = coherence_magnitude_f.mean(
-    #     axis=0
-    # )  # Shape: (n_segments,)
-    #
-    # return avg_coherence_per_segment
-
-
-def get_coherence_optimized_no_trunc(
-    Zxx1: NDArray, Zxx2: NDArray, cpsd_12: NDArray, step: int = 11
-) -> NDArray[np.float64]:
-    """
-    Calculates the average coherence magnitude over frequency for time segments,
-    including a final segment potentially shorter than 'step'.
-
-    Assumes Zxx1, Zxx2, and cpsd_12 have the same shape (n_freqs, n_times)
-    and correspond to the same frequencies and time points.
-
-    The function averages the complex coherence over time windows. Windows 0 to N-1
-    have size 'step'. The final window N has size n_times % step (if non-zero).
-    It takes the magnitude of the average complex coherence for each window at each
-    frequency, and then averages these magnitudes across frequencies for each window.
-
-    Args:
-        Zxx1: STFT result for signal 1 (n_freqs, n_times).
-        Zxx2: STFT result for signal 2 (n_freqs, n_times).
-        cpsd_12: Cross power spectral density between signal 1 and 2 (n_freqs, n_times).
-        step: The size of the time windows (number of time points) for averaging,
-              except possibly the last one.
-
-    Returns:
-        NDArray[np.float64]: An array containing the average coherence magnitude
-                             for each time segment (shape: n_segments + (1 if remainder else 0),).
-
-    Raises:
-        ValueError: If input shapes are inconsistent or step size is invalid.
-    """
-    if not (Zxx1.shape == Zxx2.shape == cpsd_12.shape):
-        raise ValueError(
-            "Input arrays Zxx1, Zxx2, and cpsd_12 must have the same shape."
-        )
-    if Zxx1.ndim != 2:
-        raise ValueError("Input arrays must be 2-dimensional (n_freqs, n_times).")
-    if step <= 0:
-        raise ValueError("step must be a positive integer.")
-
-    n_freqs, n_times = Zxx1.shape
-    if n_times == 0:
-        return np.array([])  # Return empty if no time points
-
-    # --- Calculation for full segments ---
-    n_segments_full = n_times // step
-    n_times_full = n_segments_full * step
-    results_full = np.array([])  # Initialize empty array for results from full segments
-
-    if n_segments_full > 0:
-        # Extract data for full segments
-        Zxx1_full = Zxx1[:, :n_times_full]
-        Zxx2_full = Zxx2[:, :n_times_full]
-        cpsd_12_full = cpsd_12[:, :n_times_full]
-
-        # Calculate Power Spectral Densities (PSD) for full segments
-        pxx_full = np.abs(Zxx1_full) ** 2
-        pyy_full = np.abs(Zxx2_full) ** 2
-
-        # Reshape arrays to separate segments: (n_freqs, n_segments, step)
-        pxx_segmented = pxx_full.reshape(n_freqs, n_segments_full, step)
-        pyy_segmented = pyy_full.reshape(n_freqs, n_segments_full, step)
-        cpsd_segmented = cpsd_12_full.reshape(n_freqs, n_segments_full, step)
-
-        # Average over the time window (axis=2) for each segment and frequency
-        pxx_avg_full = pxx_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments_full)
-        pyy_avg_full = pyy_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments_full)
-        cpsd_avg_full = cpsd_segmented.mean(axis=2)  # Shape: (n_freqs, n_segments_full)
-
-        # Calculate complex coherence per frequency per full segment
-        denominator_full_sq = np.maximum(0, pxx_avg_full * pyy_avg_full)
-        denominator_full = np.sqrt(denominator_full_sq)
-        complex_coherence_f_full = np.divide(
-            cpsd_avg_full,
-            denominator_full,
-            out=np.zeros_like(cpsd_avg_full, dtype=complex),
-            where=denominator_full != 0,
-        )
-
-        # Average coherence magnitude across frequencies for each full segment
-        coherence_magnitude_f_full = np.abs(complex_coherence_f_full)
-        results_full = coherence_magnitude_f_full.mean(
-            axis=0
-        )  # Shape: (n_segments_full,)
-
-    # --- Calculation for the trailing segment (if any) ---
-    results_trail = np.array([])  # Initialize empty array for trailing result
-
-    if n_times_full < n_times:
-        # Extract data for the trailing segment
-        Zxx1_trail = Zxx1[:, n_times_full:]
-        Zxx2_trail = Zxx2[:, n_times_full:]
-        cpsd_12_trail = cpsd_12[:, n_times_full:]
-
-        # Calculate PSDs for the trailing segment
-        pxx_trail = np.abs(Zxx1_trail) ** 2
-        pyy_trail = np.abs(Zxx2_trail) ** 2
-
-        # Average over the remaining time points (axis=1)
-        pxx_avg_trail = pxx_trail.mean(axis=1)  # Shape: (n_freqs,)
-        pyy_avg_trail = pyy_trail.mean(axis=1)  # Shape: (n_freqs,)
-        cpsd_avg_trail = cpsd_12_trail.mean(axis=1)  # Shape: (n_freqs,)
-
-        # Calculate complex coherence per frequency for the trailing segment
-        denominator_trail_sq = np.maximum(0, pxx_avg_trail * pyy_avg_trail)
-        denominator_trail = np.sqrt(denominator_trail_sq)
-        complex_coherence_f_trail = np.divide(
-            cpsd_avg_trail,
-            denominator_trail,
-            out=np.zeros_like(cpsd_avg_trail, dtype=complex),
-            where=denominator_trail != 0,
-        )
-
-        # Average coherence magnitude across frequencies for the trailing segment
-        coherence_magnitude_f_trail = np.abs(complex_coherence_f_trail)
-        # Result is a single scalar value, put into a 1-element array
-        results_trail = np.array([coherence_magnitude_f_trail.mean(axis=0)])
-
-    # --- Combine results ---
-    # Concatenate the results from full segments and the trailing segment
-    final_result = np.concatenate((results_full, results_trail))
-
-    return final_result
-
-
-def calculate_segmented_coherence(
-    datetimes: NDArray[np.datetime64],
-    x: NDArray[np.float64],
-    y: NDArray[np.float64],
-    fs: float,
-    segment_length_sec: float = None,  # Define segment length in seconds
-    nperseg: int = None,  # OR define segment length by samples
-    nfft_coh: int = None,  # nfft for coherence calc within segment
-    window_coh: str = "hann",  # Window for coherence calc within segment
-    noverlap_coh: int = None,  # Overlap for coherence calc within segment (usually None for Welch/CSD)
-    freq_range: tuple[
-        float, float
-    ] = None,  # Optional: (fmin, fmax) to average coherence over
-) -> tuple[NDArray[np.datetime64], NDArray[np.float64]]:
-    """
-    Calculates average coherence over frequency for distinct time segments.
-
-    Segments the input signals x and y based on time duration or number of samples.
-    For each segment, computes the Magnitude Squared Coherence (MSC) across
-    frequencies using Welch's method for PSD/CPSD estimation within the segment.
-    Averages the MSC over a specified frequency range (or all frequencies) to
-    get a single coherence value for that segment.
-
-    Args:
-        datetimes (NDArray): Datetime array corresponding to x and y.
-        x (NDArray): First time series signal.
-        y (NDArray): Second time series signal (same length as x and datetimes).
-        fs (float): Sampling frequency of the time series.
-        segment_length_sec (float, optional): Desired length of each analysis
-            segment in seconds. One of segment_length_sec or nperseg must be provided.
-        nperseg (int, optional): Desired length of each analysis segment in samples.
-            One of segment_length_sec or nperseg must be provided.
-        nfft_coh (int, optional): Length of FFT for Welch/CSD calculation *within*
-            each segment. Defaults to nperseg if not given.
-        window_coh (str, optional): Window function for Welch/CSD calculation.
-            Defaults to 'hann'.
-        noverlap_coh (int, optional): Overlap for Welch/CSD calculation.
-            Defaults to nperseg // 2 if nperseg is specified for Welch/CSD.
-            Set to 0 or None for no overlap if calculating coherence just based on the whole segment.
-            **Note:** For Welch/CSD, `nperseg` used here refers to the internal FFT length,
-            not necessarily the full segment length passed in `nperseg` argument of this function.
-            Let's simplify and use `nfft_coh` as the primary control for FFT length within the segment.
-        freq_range (tuple[float, float], optional): Tuple (fmin, fmax) specifying
-            the frequency range over which to average the calculated coherence.
-            If None, averages over all calculated frequencies. Defaults to None.
-
-
-    Returns:
-        tuple[NDArray[np.datetime64], NDArray[np.float64]]:
-            - mid_times: Array of datetime objects representing the midpoint of each segment.
-            - avg_coherence: Array of the average coherence values for each segment.
-
-    Raises:
-        ValueError: If inputs have inconsistent lengths, parameters are invalid,
-                    or neither segment_length_sec nor nperseg is provided.
-    """
-    if not (len(datetimes) == len(x) == len(y)):
-        raise ValueError("Input arrays datetimes, x, and y must have the same length.")
-    if segment_length_sec is None and nperseg is None:
-        raise ValueError("One of 'segment_length_sec' or 'nperseg' must be provided.")
-    if segment_length_sec is not None and nperseg is not None:
-        warnings.warn(
-            "Both 'segment_length_sec' and 'nperseg' provided. Using 'nperseg'.",
-            stacklevel=2,
-        )
-    if nperseg is None:
-        nperseg = int(segment_length_sec * fs)
-        if nperseg <= 0:
-            raise ValueError(
-                "Resulting nperseg from segment_length_sec must be positive."
-            )
-    elif nperseg <= 0:
-        raise ValueError("nperseg must be positive.")
-
-    n_times = len(datetimes)
-    if n_times < nperseg:
-        warnings.warn(
-            f"Signal length ({n_times}) is shorter than segment length ({nperseg}). Calculating coherence over the entire signal.",
-            stacklevel=2,
-        )
-        nperseg = n_times  # Use the whole signal as one segment
-
-    # --- Parameters for Welch/CSD inside segments ---
-    # Use nfft_coh if provided, otherwise default to the segment length nperseg
-    # This nfft determines the frequency resolution *within* the segment average
-    nfft_internal = nfft_coh if nfft_coh is not None else nperseg
-    if noverlap_coh is None:
-        noverlap_internal = nfft_internal // 2  # Default overlap for Welch/CSD
-    else:
-        noverlap_internal = noverlap_coh
-
-    mid_times = []
-    avg_coherence_list = []
-
-    # Iterate through segments using the overall nperseg for segmentation
-    for i_start in range(0, n_times, nperseg):
-        i_end = min(i_start + nperseg, n_times)
-        segment_len = i_end - i_start
-
-        # Skip segments that are too short for the internal FFT calculation
-        if segment_len < nfft_internal:
-            warnings.warn(
-                f"Skipping segment {i_start}-{i_end} (length {segment_len}) as it's shorter than internal nfft ({nfft_internal}).",
-                stacklevel=2,
-            )
-            continue
-        if segment_len <= 0:  # Should not happen if nperseg is positive, but safe check
-            continue
-
-        # Extract data for the current segment
-        dt_segment = datetimes[i_start:i_end]
-        x_segment = x[i_start:i_end]
-        y_segment = y[i_start:i_end]
-
-        # Calculate average PSDs and CPSD for this segment using Welch/CSD
-        try:
-            f_seg, Pxx_seg = signal.welch(
-                x_segment,
-                fs=fs,
-                window=window_coh,
-                nperseg=nfft_internal,
-                noverlap=noverlap_internal,
-                nfft=nfft_internal,
-                scaling="density",
-            )
-            _, Pyy_seg = signal.welch(
-                y_segment,
-                fs=fs,
-                window=window_coh,
-                nperseg=nfft_internal,
-                noverlap=noverlap_internal,
-                nfft=nfft_internal,
-                scaling="density",
-            )
-            _, Pxy_seg = signal.csd(
-                x_segment,
-                y_segment,
-                fs=fs,
-                window=window_coh,
-                nperseg=nfft_internal,
-                noverlap=noverlap_internal,
-                nfft=nfft_internal,
-                scaling="density",
-            )
-        except ValueError as e:
-            # Handle cases where segment might be too short after windowing/detrending etc.
-            warnings.warn(
-                f"Welch/CSD failed for segment {i_start}-{i_end}: {e}. Skipping segment.",
-                stacklevel=2,
-            )
-            continue
-
-        # Calculate Magnitude Squared Coherence (frequency-dependent) for this segment
-        denominator = Pxx_seg * Pyy_seg
-        Cxy_seg_f = np.divide(
-            np.abs(Pxy_seg) ** 2,
-            denominator,
-            out=np.zeros_like(denominator, dtype=float),
-            where=denominator > 1e-15,  # Tolerance for denominator
-        )
-        Cxy_seg_f = np.clip(Cxy_seg_f, 0, 1)  # Ensure range [0, 1]
-
-        # Average coherence over the specified frequency range
-        if freq_range:
-            fmin, fmax = freq_range
-            freq_mask = (f_seg >= fmin) & (f_seg <= fmax)
-            if np.any(freq_mask):
-                segment_avg_coherence = np.mean(Cxy_seg_f[freq_mask])
-            else:
-                warnings.warn(
-                    f"No frequencies found in range {freq_range} for segment {i_start}-{i_end}. Setting coherence to NaN.",
-                    stacklevel=2,
-                )
-                segment_avg_coherence = np.nan  # Or 0, depending on desired behavior
-        else:
-            # Average over all frequencies
-            segment_avg_coherence = np.mean(Cxy_seg_f)
-
-        # Calculate midpoint time for the segment
-        # Midpoint calculation more robust for datetime64
-        mid_time_ns = (
-            dt_segment[0].astype("datetime64[ns]").astype(np.int64)
-            + (
-                dt_segment[-1].astype("datetime64[ns]").astype(np.int64)
-                - dt_segment[0].astype("datetime64[ns]").astype(np.int64)
-            )
-            // 2
-        )
-        mid_time = mid_time_ns.astype("datetime64[ns]")
-
-        mid_times.append(mid_time)
-        avg_coherence_list.append(segment_avg_coherence)
-
-    if not mid_times:  # Handle case where no segments were processed
-        return np.array([], dtype="datetime64[ns]"), np.array([], dtype=float)
-
-    return np.array(mid_times), np.array(avg_coherence_list)
-
-
 def calculate_segmented_complex_coherency(  # Renamed function
     datetimes: NDArray[np.datetime64],
     x: NDArray[np.float64],
@@ -1169,7 +655,7 @@ def calculate_segmented_complex_coherency(  # Renamed function
 
         try:
             # Calculate PSDs and CPSD (same as before)
-            f_seg, Pxx_seg = signal.welch(
+            f_seg, pxx_seg = signal.welch(
                 x_segment,
                 fs=fs,
                 window=window_coh,
@@ -1178,7 +664,7 @@ def calculate_segmented_complex_coherency(  # Renamed function
                 nfft=nfft_internal,
                 scaling="density",
             )
-            _, Pyy_seg = signal.welch(
+            _, pyy_seg = signal.welch(
                 y_segment,
                 fs=fs,
                 window=window_coh,
@@ -1187,7 +673,7 @@ def calculate_segmented_complex_coherency(  # Renamed function
                 nfft=nfft_internal,
                 scaling="density",
             )
-            _, Pxy_seg = signal.csd(
+            _, pxy_seg = signal.csd(
                 x_segment,
                 y_segment,
                 fs=fs,
@@ -1207,13 +693,13 @@ def calculate_segmented_complex_coherency(  # Renamed function
         # --- Calculate Complex Coherency (frequency-dependent) ---
         # Denominator term: sqrt(Pxx * Pyy)
         # Use np.abs for safety inside sqrt, though PSDs should be non-negative
-        denominator_sqrt = np.sqrt(np.abs(Pxx_seg * Pyy_seg))
+        denominator_sqrt = np.sqrt(np.abs(pxx_seg * pyy_seg))
 
         # Calculate complex coherency cxy(f) = Pxy / sqrt(Pxx * Pyy)
         complex_coherency_f = np.divide(
-            Pxy_seg,  # Numerator is complex CPSD
+            pxy_seg,  # Numerator is complex CPSD
             denominator_sqrt,
-            out=np.zeros_like(Pxy_seg, dtype=np.complex128),  # Output is complex
+            out=np.zeros_like(pxy_seg, dtype=np.complex128),  # Output is complex
             where=denominator_sqrt > 1e-15,  # Tolerance for denominator
         )
         # Note: Clipping magnitude to 1 isn't strictly necessary but can handle numerical noise

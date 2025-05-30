@@ -717,7 +717,7 @@ class SCMEFDUlf:
         """
         # low-pass filter: 16hz
         b, a = customize_butter(
-            fs=self.scm.fs, f_t=self.scm.f_t, f_z=self.scm.f_z, type="lowpass"
+            fs=self.scm.fs, f_t=self.scm.f_t, f_z=self.scm.f_z, _type="lowpass"
         )
         b_filtered_ls = [
             filtfilt(b, a, i.values.flatten())
