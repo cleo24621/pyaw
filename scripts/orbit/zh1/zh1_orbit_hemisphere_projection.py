@@ -1,10 +1,10 @@
 import os
 
 from matplotlib import pyplot as plt
-
-from src.pyaw import ProjectConfigs
 from utils import orbit
+
 from core import zh1
+from src.pyaw import ProjectConfigs
 
 satellite = "zh1"
 data_dir_path = ProjectConfigs.data_dir_path
@@ -15,7 +15,7 @@ efd = zh1.EFD(file_path)
 df1c = efd.df1c
 lats = df1c["GEO_LAT"].values
 lons = df1c["GEO_LON"].values
-orbit_zh1 = orbit.OrbitZh1(file_name)
+orbit_zh1 = orbit.GetZh1NorSouSplitIndices(file_name)
 indicator = orbit_zh1.indicator
 indices = orbit.get_nor_sou_split_indices_zh1(lats, indicator)
 hemisphere_slice = slice(*indices[0])

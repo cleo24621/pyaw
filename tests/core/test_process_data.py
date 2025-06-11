@@ -2,19 +2,22 @@ import os.path
 import unittest
 
 import pandas as pd
-
 import utils
-from core import zh1
 from utils import orbit_temp
+
+from core import zh1
 from src.pyaw import ProjectConfigs
 
 data_dir_path = ProjectConfigs.data_dir_path
 
+
 class TestBaseProcess(unittest.TestCase):
     def test_get_split_indices(self):
         # 构建测试数据绝对路径
-        file_name = "only_gdcoors_SW_OPER_MAGA_LR_1B_12727_20160229T235551_20160301T012924.pkl"
-        file_path = os.path.join(data_dir_path,file_name)
+        file_name = (
+            "only_gdcoors_SW_OPER_MAGA_LR_1B_12727_20160229T235551_20160301T012924.pkl"
+        )
+        file_path = os.path.join(data_dir_path, file_name)
         # 加载测试数据（确保文件读取后关闭，释放内存）
         with open(file_path, "rb") as f:
             test_df = pd.read_pickle(f)
@@ -56,24 +59,25 @@ class TestZh1ProcessHemisphere(unittest.TestCase):
         }
 
         for file_name in file_names.values():
-            orbit_zh1 = utils.orbit.OrbitZh1(file_name)
+            orbit_zh1 = utils.orbit.GetZh1NorSouSplitIndices(file_name)
             self.assertTrue(len(orbit_zh1.orbit_number) == 5, "轨道号（5 位数字）")
             self.assertTrue(
                 len(orbit_zh1.start_time) == 15,
                 "数据起始时间，采用 14 位数字表示（包含分隔符'_'，所以长度因为15）",
             )
             self.assertTrue(
-                len(orbit_zh1.start_time) == len(orbit_zh1.end_time), "数据结束时间，采用 14 位数字表示"
+                len(orbit_zh1.start_time) == len(orbit_zh1.end_time),
+                "数据结束时间，采用 14 位数字表示",
             )
 
     def test_get_split_indices(self):
         # 0 descending (north to south)
         # path
         file_name = "CSES_01_EFD_1_L2A_A1_175380_20210401_003440_20210401_010914_000.h5"
-        file_path = os.path.join(data_dir_path,file_name)
+        file_path = os.path.join(data_dir_path, file_name)
 
         # test
-        orbit_zh1 = utils.orbit.OrbitZh1(file_name)
+        orbit_zh1 = utils.orbit.GetZh1NorSouSplitIndices(file_name)
         efd = zh1.EFD(file_path)
         lats = efd.df1c["GEO_LAT"]
         indices = utils.orbit.get_nor_sou_split_indices_zh1(lats, orbit_zh1.indicator)
@@ -87,8 +91,8 @@ class TestZh1ProcessHemisphere(unittest.TestCase):
         # 1 ascending (south to north)
         # path
         file_name = "CSES_01_EFD_1_L2A_A1_175381_20210401_012158_20210401_015642_000.h5"
-        file_path = os.path.join(data_dir_path,file_name)
-        orbit_zh1 = utils.orbit.OrbitZh1(file_name)
+        file_path = os.path.join(data_dir_path, file_name)
+        orbit_zh1 = utils.orbit.GetZh1NorSouSplitIndices(file_name)
         efd = zh1.EFD(file_path)
         lats = efd.df1c["GEO_LAT"]
         indices = utils.orbit.get_nor_sou_split_indices_zh1(lats, orbit_zh1.indicator)

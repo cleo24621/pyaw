@@ -1,6 +1,8 @@
+from typing import Union
+
+import cartopy.feature as cfeature  # Moved import here for clarity
 import numpy as np
 from cartopy import crs as ccrs
-import cartopy.feature as cfeature # Moved import here for clarity
 from matplotlib import pyplot as plt, path as mpath
 from matplotlib.axes import Axes
 from numpy.typing import NDArray
@@ -8,13 +10,15 @@ from numpy.typing import NDArray
 
 # todo: simplify
 
+
 def get_nor_sou_split_indices_swarm_dmsp(latitudes: NDArray):
-    """
-    get the indices that split array into northern and southern.
-    todo: 也许需要添加处理纬度等于0时属于北半球或南半球的情况（会有吗？（极端情况：0.00001））
+    """Get the indices that split the 1D array of latitudes into northern and southern.
+
     Args:
         latitudes: pattern is [south,north], or [south,north,south(few)]
 
+    Notes:
+        Pay attention to the case that some latitudes are exactly 0.
     """
     neg_indices = np.where(latitudes < 0)[0]
     if not neg_indices.size:
@@ -27,37 +31,36 @@ def get_nor_sou_split_indices_swarm_dmsp(latitudes: NDArray):
     return (0, start_south), (start_south, end_south)
 
 
-class OrbitZh1:
+class GetZh1NorSouSplitIndices:
     def __init__(self, file_name):
         """
 
         Args:
-            file_name: support the efd 2a data filename
+            file_name: support the filename of EFD 2A data product.
         """
         self.file_name = file_name
         self.orbit_number, self.indicator, self.start_time, self.end_time = (
-            self._get_orbitnumber_indicator_st_et()
+            self._get_orbit_number_indicator_st_et()
         )
 
-    def _get_orbitnumber_indicator_st_et(self):
+    def _get_orbit_number_indicator_st_et(self):
         """
-        因为不同2级产品的命名格式是固定的，所以当前方法适用于所有2a级产品的文件名（参考文档）。
-        1: ascending (south to north)
-        0: descending (north to south)
+
+        Notes:
+            1 for ascending (south to north).
+            0 for descending (north to south).
+            因为不同2级产品的命名格式是固定的，所以当前方法适用于所有2a级产品的文件名（参考文档）。
         """
         parts = self.file_name.split("_")
         part = parts[6]
         assert part[-1] in ["0", "1"]
         start_time = parts[7] + "_" + parts[8]
         end_time = parts[9] + "_" + parts[10]
+
         return parts[6][:-1], parts[6][-1], start_time, end_time
 
     def get_nor_sou_split_indices(self, latitudes: NDArray):
-        """
-
-        Returns:
-
-        """
+        """Refer to 'get_nor_sou_split_indices_swarm_dmsp()'."""
         # 对于zh1而言，indicator="0" or indicator="1"
         assert self.indicator in ["1", "0"]
         if all(latitudes > 0):
@@ -74,9 +77,96 @@ class OrbitZh1:
 
 def orbit_hemisphere_projection(
     lons: NDArray,
+    lats,
+    NDArray,
+    proj_method: str,
+    central_longitude: float = 0,
+    extent: tuple[float, float, float, float] = None,
+    xlocs: NDArray = np.arange(-180, 181, 45),
+    ylocs: NDArray = None,
+    title: str = None,
+    ax: Axes = None,
+    figsize: tuple[float, float] = (12, 12),
+    if_cfeature: bool = False,
+    satellite: str = None,
+):
+    """Return the Figure, Axes objects of the hemisphere projection of one orbit.
+
+    The projection uses cartopy's NorthPolarStereo or SouthPolarStereo projection.
+    """
+    assert proj_method in ["NorthPolarStereo", "SouthPolarStereo"]
+
+    # create the projection
+    if proj_method == "NorthPolarStereo":
+        proj = ccrs.NorthPolarStereo(central_longitude=central_longitude)
+    else:
+        proj = ccrs.SouthPolarStereo(central_longitude=central_longitude)
+    geodetic = ccrs.PlateCarree()
+
+    # set the extent, ylocs and title of the figure.
+    if proj_method == "NorthPolarStereo":
+        default_extent = (-180, 180, 0, 90)
+        default_ylocs = np.arange(0, 91, 15)
+        default_title = "North Hemisphere Map using NorthPolarStereo Projection"
+    else:
+        default_extent = (-180, 180, -90, 0)
+        default_ylocs = np.arange(-90, 0, 15)
+        default_title = "South Hemisphere Map using SouthPolarStereo Projection"
+    current_extent = extent if extent is not None else default_extent
+    current_ylocs = ylocs if ylocs is not None else default_ylocs
+    current_title = title if title is not None else default_title
+
+    # create the figure and axes if not provides.
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.figure
+
+    # Set border
+    ax.set_extent(list(current_extent), crs=geodetic)
+    # Create circle border
+    theta = np.linspace(0, 2 * np.pi, 100)
+    circle = mpath.Path(np.column_stack([np.sin(theta), np.cos(theta)]) * 0.45 + 0.5)
+    ax.set_border(circle, transform=ax.transAxes)
+
+    # Add geographic features
+    if if_cfeature:
+        ax.add_feature(cfeature.LAND.with_scale("50m"), alpha=0.6)
+        ax.add_feature(cfeature.OCEAN.with_scale("50m"), alpha=0.4)
+        ax.coastlines(resolution="50m", linewidth=0.5)
+
+    # Add gridlines
+    gl = ax.gridlines(
+        draw_labels=True,
+        linewidth=0.5,
+        color="gray",
+        xlocs=xlocs,
+        ylocs=current_ylocs,
+        xpadding=15,
+        ypadding=15,
+    )
+    gl.top_labels, gl.right_labels, gl.rotate_labels = False, False, False
+
+    # Plot
+    ax.plot(
+        *proj.transform_points(geodetic, lons, lats)[:, :2].T,
+        "b-",
+        lw=1.5,
+        label="Satellite orbit" if satellite is None else f"{satellite} orbit",
+    )
+    ax.legend(loc="upper right")
+
+    # Title
+    ax.set_title(current_title, fontsize=12, pad=18)
+
+    return fig, ax
+
+
+def orbit_hemisphere_projection(
+    lons: NDArray,
     lats: NDArray,
     proj_method: str,
-    satellite: str = None,
+    satellite: Union[str, None] = None,
     central_longitude: float = 0,
     figsize: tuple[float, float] = (12, 12),
     lon_lat_ext: tuple[float, float, float, float] = None,
@@ -85,31 +175,14 @@ def orbit_hemisphere_projection(
     title: str = None,
     ax: Axes = None,
 ):
-    """
-
-    Args:
-        lons: hemisphere lons (half orbit)
-        lats: ~
-        satellite:
-        proj_method: one of ["NorthPolarStereo","SouthPolarStereo"]
-        central_longitude:
-        figsize:
-        lon_lat_ext: 经度和纬度的范围
-        if_cfeature: 是否显示地理信息（海岸线等）
-        if_title: 是否显示标题
-        title: 标题
-        ax: Axes对象，为南北同时绘制做准备
-
-    Returns:
-
-    """
+    """Return the fig, ax of the hemisphere projection of one orbit."""
     assert proj_method in ["NorthPolarStereo", "SouthPolarStereo"]
-    # 投影配置
-    proj_dict = {
+
+    proj_dic = {
         "NorthPolarStereo": ccrs.NorthPolarStereo,
         "SouthPolarStereo": ccrs.SouthPolarStereo,
     }
-    proj = proj_dict[proj_method](central_longitude=central_longitude)
+    proj = proj_dic[proj_method](central_longitude=central_longitude)
     geodetic = ccrs.PlateCarree()
 
     # 设置默认的extent,标题,ylocs
@@ -692,7 +765,9 @@ def orbits_hemisphere_with_one_vector_projection(
     gl.top_labels, gl.right_labels, gl.rotate_labels = False, False, False
 
     first = True  # 控制quiverkey仅显示一次
-    for lons, lats, vector_component in zip(lons_list, lats_list, vector_component_list):
+    for lons, lats, vector_component in zip(
+        lons_list, lats_list, vector_component_list
+    ):
         lons_step = lons[::step]
         lats_step = lats[::step]
         comp_step = vector_component[::step]
@@ -703,7 +778,7 @@ def orbits_hemisphere_with_one_vector_projection(
         y = proj_points[:, 1]
 
         # 绘制轨迹线
-        ax.plot(x, y, 'b-', lw=1.5, zorder=2)
+        ax.plot(x, y, "b-", lw=1.5, zorder=2)
 
         # 计算矢量方向（垂直于轨迹）
         if len(x) < 2:
@@ -732,30 +807,36 @@ def orbits_hemisphere_with_one_vector_projection(
 
         # 绘制箭头
         q = ax.quiver(
-            x[:-1], y[:-1],
-            u, v,
+            x[:-1],
+            y[:-1],
+            u,
+            v,
             scale=35,
             width=0.0025,
             headwidth=0,
             headlength=0,
             headaxislength=0,
-            color='crimson',
+            color="crimson",
             transform=proj,
-            zorder=4
+            zorder=4,
         )
 
         # 添加quiverkey（仅第一次绘制）
         if first:
             ax.quiverkey(
-                q, X=0.82, Y=0.12, U=0.5,
-                label=f'Normalized Field (nT)',
-                labelpos='E',
-                coordinates='axes'
+                q,
+                X=0.82,
+                Y=0.12,
+                U=0.5,
+                label=f"Normalized Field (nT)",
+                labelpos="E",
+                coordinates="axes",
             )
             first = False
     if if_title:
         ax.set_title(current_title, fontsize=12, pad=18)
     return fig, ax
+
 
 def orbits_hemisphere_with_one_vector_projection_modified(
     lons_list: list[np.ndarray],
@@ -770,7 +851,7 @@ def orbits_hemisphere_with_one_vector_projection_modified(
     title: str = None,
     ax: plt.Axes = None,
     step: int = None,
-    vector_scale_numerator: float = 2.0, # New parameter for scale factor numerator
+    vector_scale_numerator: float = 2.0,  # New parameter for scale factor numerator
 ):
     """
     Plots satellite orbits and associated vector components perpendicular to the track
@@ -797,8 +878,10 @@ def orbits_hemisphere_with_one_vector_projection_modified(
     Returns:
         tuple[plt.Figure, plt.Axes]: The figure and axes objects.
     """
-    assert proj_method in ["NorthPolarStereo", "SouthPolarStereo"], \
-        "proj_method must be either 'NorthPolarStereo' or 'SouthPolarStereo'"
+    assert proj_method in [
+        "NorthPolarStereo",
+        "SouthPolarStereo",
+    ], "proj_method must be either 'NorthPolarStereo' or 'SouthPolarStereo'"
 
     # Projection configuration
     proj_dict = {
@@ -813,7 +896,7 @@ def orbits_hemisphere_with_one_vector_projection_modified(
         default_ext = (-180, 180, 0, 90)
         default_title = "North Hemisphere Map using NorthPolarStereo Projection"
         ylocs = np.arange(0, 91, 15)
-    else: # SouthPolarStereo
+    else:  # SouthPolarStereo
         default_ext = (-180, 180, -90, 0)
         default_title = "South Hemisphere Map using SouthPolarStereo Projection"
         ylocs = np.arange(-90, 0, 15)
@@ -825,7 +908,7 @@ def orbits_hemisphere_with_one_vector_projection_modified(
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize, subplot_kw={"projection": proj})
     else:
-        fig = ax.figure # Use the figure associated with the provided axes
+        fig = ax.figure  # Use the figure associated with the provided axes
 
     # Set map extent
     ax.set_extent(list(current_ext), crs=geodetic)
@@ -843,16 +926,16 @@ def orbits_hemisphere_with_one_vector_projection_modified(
     if if_cfeature:
         ax.add_feature(cfeature.LAND.with_scale("50m"), alpha=0.6, zorder=0)
         ax.add_feature(cfeature.OCEAN.with_scale("50m"), alpha=0.4, zorder=0)
-        ax.coastlines(resolution="50m", linewidth=0.5, color='gray', zorder=1)
+        ax.coastlines(resolution="50m", linewidth=0.5, color="gray", zorder=1)
 
     # Add gridlines
     gl = ax.gridlines(
-        crs=geodetic, # Specify CRS for gridlines explicitly
+        crs=geodetic,  # Specify CRS for gridlines explicitly
         draw_labels=True,
         linewidth=0.5,
         color="gray",
         alpha=0.7,
-        linestyle='--',
+        linestyle="--",
         xlocs=np.arange(-180, 181, 45),
         ylocs=ylocs,
         # Consider label padding adjustments if labels overlap border
@@ -865,16 +948,18 @@ def orbits_hemisphere_with_one_vector_projection_modified(
     # gl.yformatter = LATITUDE_FORMATTER
 
     first_quiver = True  # Control quiverkey display (only once)
-    for lons, lats, vector_component in zip(lons_list, lats_list, vector_component_list):
+    for lons, lats, vector_component in zip(
+        lons_list, lats_list, vector_component_list
+    ):
         # Apply step for subsampling if specified
         if step is not None and step > 1:
-             lons_step = lons[::step]
-             lats_step = lats[::step]
-             comp_step = vector_component[::step]
+            lons_step = lons[::step]
+            lats_step = lats[::step]
+            comp_step = vector_component[::step]
         else:
-             lons_step = lons
-             lats_step = lats
-             comp_step = vector_component
+            lons_step = lons
+            lats_step = lats
+            comp_step = vector_component
 
         # Transform coordinates to map projection
         # Note: Ensure lons/lats are within standard ranges (-180 to 180, -90 to 90)
@@ -884,12 +969,14 @@ def orbits_hemisphere_with_one_vector_projection_modified(
             x = proj_points[:, 0]
             y = proj_points[:, 1]
         except Exception as e:
-            print(f"Warning: Coordinate transformation failed for an orbit segment: {e}")
-            continue # Skip this orbit segment if transformation fails
+            print(
+                f"Warning: Coordinate transformation failed for an orbit segment: {e}"
+            )
+            continue  # Skip this orbit segment if transformation fails
 
         # Plot trajectory line
         # --- MODIFICATION: Changed color to 'darkgray' ---
-        ax.plot(x, y, color='darkgray', linestyle='-', lw=1.5, zorder=2, transform=proj)
+        ax.plot(x, y, color="darkgray", linestyle="-", lw=1.5, zorder=2, transform=proj)
 
         # Calculate vector direction (perpendicular to trajectory)
         if len(x) < 2:
@@ -905,7 +992,7 @@ def orbits_hemisphere_with_one_vector_projection_modified(
         # Avoid division by zero for segments with zero length (e.g., repeated points)
         valid_mask = lengths != 0
         if not np.any(valid_mask):
-             continue # Skip if no valid segments
+            continue  # Skip if no valid segments
 
         # Apply normalization only where length is non-zero
         perp_dx[valid_mask] /= lengths[valid_mask]
@@ -915,11 +1002,13 @@ def orbits_hemisphere_with_one_vector_projection_modified(
         # If comp_step has n points, take the average or first n-1?
         # Original code used comp_step[:-1], assuming component corresponds to start of segment.
         if len(comp_step) == len(x):
-            components = comp_step[:-1] # Align with n-1 segments
+            components = comp_step[:-1]  # Align with n-1 segments
         elif len(comp_step) == len(x) - 1:
-            components = comp_step # Already aligned
+            components = comp_step  # Already aligned
         else:
-            print(f"Warning: Mismatch between number of points ({len(x)}) and components ({len(comp_step)}). Skipping vector plotting for this segment.")
+            print(
+                f"Warning: Mismatch between number of points ({len(x)}) and components ({len(comp_step)}). Skipping vector plotting for this segment."
+            )
             continue
 
         # Filter components based on valid mask from length calculation
@@ -931,7 +1020,7 @@ def orbits_hemisphere_with_one_vector_projection_modified(
         perp_dy = perp_dy[valid_mask]
 
         if len(components) == 0:
-             continue # No valid vectors to plot
+            continue  # No valid vectors to plot
 
         max_abs_component = np.max(np.abs(components))
         if max_abs_component == 0:
@@ -948,31 +1037,38 @@ def orbits_hemisphere_with_one_vector_projection_modified(
         # Plot vectors (arrows) using quiver
         # --- MODIFICATION: Changed color to 'skyblue' ---
         q = ax.quiver(
-            x_segment_start, y_segment_start, # Start points of segments
-            u, v,                           # Vector components in projection coordinates
-            scale=35,                       # Adjust scale for visual appearance (data units per arrow length unit)
-            width=0.0025,                   # Arrow width
-            headwidth=0,                    # No arrowhead
-            headlength=0,                   # No arrowhead
-            headaxislength=0,               # No arrowhead
-            color='skyblue',                # Vector color
-            transform=proj,                 # Specify coordinates are in the projection system
-            zorder=4                        # Draw vectors above trajectory
+            x_segment_start,
+            y_segment_start,  # Start points of segments
+            u,
+            v,  # Vector components in projection coordinates
+            scale=35,  # Adjust scale for visual appearance (data units per arrow length unit)
+            width=0.0025,  # Arrow width
+            headwidth=0,  # No arrowhead
+            headlength=0,  # No arrowhead
+            headaxislength=0,  # No arrowhead
+            color="skyblue",  # Vector color
+            transform=proj,  # Specify coordinates are in the projection system
+            zorder=4,  # Draw vectors above trajectory
         )
 
         # Add quiver key (legend for vectors) only for the first quiver plot
         if first_quiver:
             ax.quiverkey(
-                q, X=0.82, Y=0.12, U=0.5, # Position and length of the key arrow (adjust U based on expected scaled values)
-                label=f'Scaled Field', # Label - might need adjustment based on vector_scale_numerator meaning
-                labelpos='E',           # Label position (East)
-                coordinates='axes'      # Position relative to axes
+                q,
+                X=0.82,
+                Y=0.12,
+                U=0.5,  # Position and length of the key arrow (adjust U based on expected scaled values)
+                label=f"Scaled Field",  # Label - might need adjustment based on vector_scale_numerator meaning
+                labelpos="E",  # Label position (East)
+                coordinates="axes",  # Position relative to axes
             )
-            first_quiver = False # Ensure key is added only once
+            first_quiver = False  # Ensure key is added only once
 
     # Add title if requested
     if if_title:
-        ax.set_title(current_title, fontsize=12, pad=18) # Add padding to avoid overlap with labels
+        ax.set_title(
+            current_title, fontsize=12, pad=18
+        )  # Add padding to avoid overlap with labels
 
     return fig, ax
 
@@ -990,8 +1086,8 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
     title: str = None,
     ax: plt.Axes = None,
     step: int = None,
-    trajectory_color: str = 'darkgray', # New parameter for trajectory color
-    vector_color: str = 'skyblue',      # New parameter for vector color
+    trajectory_color: str = "darkgray",  # New parameter for trajectory color
+    vector_color: str = "skyblue",  # New parameter for vector color
     vector_scale_numerator: float = 2.0,
 ):
     """
@@ -1021,8 +1117,10 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
     Returns:
         tuple[plt.Figure, plt.Axes]: The figure and axes objects.
     """
-    assert proj_method in ["NorthPolarStereo", "SouthPolarStereo"], \
-        "proj_method must be either 'NorthPolarStereo' or 'SouthPolarStereo'"
+    assert proj_method in [
+        "NorthPolarStereo",
+        "SouthPolarStereo",
+    ], "proj_method must be either 'NorthPolarStereo' or 'SouthPolarStereo'"
 
     # Projection configuration
     proj_dict = {
@@ -1037,7 +1135,7 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
         default_ext = (-180, 180, 0, 90)
         default_title = "North Hemisphere Map using NorthPolarStereo Projection"
         ylocs = np.arange(0, 91, 15)
-    else: # SouthPolarStereo
+    else:  # SouthPolarStereo
         default_ext = (-180, 180, -90, 0)
         default_title = "South Hemisphere Map using SouthPolarStereo Projection"
         ylocs = np.arange(-90, 0, 15)
@@ -1049,7 +1147,7 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize, subplot_kw={"projection": proj})
     else:
-        fig = ax.figure # Use the figure associated with the provided axes
+        fig = ax.figure  # Use the figure associated with the provided axes
 
     # Set map extent
     ax.set_extent(list(current_ext), crs=geodetic)
@@ -1063,9 +1161,13 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
 
     # Add geographic features if requested
     if if_cfeature:
-        ax.add_feature(cfeature.LAND.with_scale("50m"), alpha=0.6, zorder=0, facecolor='lightgray') # Example: subtle land color
-        ax.add_feature(cfeature.OCEAN.with_scale("50m"), alpha=0.4, zorder=0, facecolor='aliceblue') # Example: subtle ocean color
-        ax.coastlines(resolution="50m", linewidth=0.5, color='gray', zorder=1)
+        ax.add_feature(
+            cfeature.LAND.with_scale("50m"), alpha=0.6, zorder=0, facecolor="lightgray"
+        )  # Example: subtle land color
+        ax.add_feature(
+            cfeature.OCEAN.with_scale("50m"), alpha=0.4, zorder=0, facecolor="aliceblue"
+        )  # Example: subtle ocean color
+        ax.coastlines(resolution="50m", linewidth=0.5, color="gray", zorder=1)
 
     # Add gridlines
     gl = ax.gridlines(
@@ -1074,7 +1176,7 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
         linewidth=0.5,
         color="gray",
         alpha=0.7,
-        linestyle='--',
+        linestyle="--",
         xlocs=np.arange(-180, 181, 45),
         ylocs=ylocs,
     )
@@ -1084,16 +1186,18 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
     # gl.yformatter = LATITUDE_FORMATTER
 
     first_quiver = True  # Control quiverkey display (only once)
-    for lons, lats, vector_component in zip(lons_list, lats_list, vector_component_list):
+    for lons, lats, vector_component in zip(
+        lons_list, lats_list, vector_component_list
+    ):
         # Apply step for subsampling if specified
         if step is not None and step > 1:
-             lons_step = lons[::step]
-             lats_step = lats[::step]
-             comp_step = vector_component[::step]
+            lons_step = lons[::step]
+            lats_step = lats[::step]
+            comp_step = vector_component[::step]
         else:
-             lons_step = lons
-             lats_step = lats
-             comp_step = vector_component
+            lons_step = lons
+            lats_step = lats
+            comp_step = vector_component
 
         # Transform coordinates to map projection
         try:
@@ -1101,12 +1205,22 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
             x = proj_points[:, 0]
             y = proj_points[:, 1]
         except Exception as e:
-            print(f"Warning: Coordinate transformation failed for an orbit segment: {e}")
-            continue # Skip this orbit segment if transformation fails
+            print(
+                f"Warning: Coordinate transformation failed for an orbit segment: {e}"
+            )
+            continue  # Skip this orbit segment if transformation fails
 
         # Plot trajectory line
         # --- MODIFICATION: Use trajectory_color parameter ---
-        ax.plot(x, y, color=trajectory_color, linestyle='-', lw=1.5, zorder=2, transform=proj)
+        ax.plot(
+            x,
+            y,
+            color=trajectory_color,
+            linestyle="-",
+            lw=1.5,
+            zorder=2,
+            transform=proj,
+        )
 
         # Calculate vector direction (perpendicular to trajectory)
         if len(x) < 2:
@@ -1120,7 +1234,7 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
         lengths = np.hypot(perp_dx, perp_dy)
         valid_mask = lengths != 0
         if not np.any(valid_mask):
-             continue
+            continue
 
         perp_dx[valid_mask] /= lengths[valid_mask]
         perp_dy[valid_mask] /= lengths[valid_mask]
@@ -1131,7 +1245,9 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
         elif len(comp_step) == len(x) - 1:
             components = comp_step
         else:
-            print(f"Warning: Mismatch between number of points ({len(x)}) and components ({len(comp_step)}). Skipping vector plotting.")
+            print(
+                f"Warning: Mismatch between number of points ({len(x)}) and components ({len(comp_step)}). Skipping vector plotting."
+            )
             continue
 
         # Filter components and coordinates based on valid segments
@@ -1142,7 +1258,7 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
         perp_dy = perp_dy[valid_mask]
 
         if len(components) == 0:
-             continue
+            continue
 
         max_abs_component = np.max(np.abs(components))
         if max_abs_component == 0:
@@ -1157,29 +1273,36 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
         # Plot vectors (arrows) using quiver
         # --- MODIFICATION: Use vector_color parameter ---
         q = ax.quiver(
-            x_segment_start, y_segment_start,
-            u, v,
-            scale=35,          # Adjust scale if needed based on vector_scale_numerator and data range
+            x_segment_start,
+            y_segment_start,
+            u,
+            v,
+            scale=35,  # Adjust scale if needed based on vector_scale_numerator and data range
             width=0.0025,
             headwidth=0,
             headlength=0,
             headaxislength=0,
-            color=vector_color, # Use the parameter here
+            color=vector_color,  # Use the parameter here
             transform=proj,
-            zorder=4
+            zorder=4,
         )
 
         # Add quiver key (legend for vectors) only for the first quiver plot
         if first_quiver:
             # Adjust U in quiverkey based on expected visual scale if needed
-            key_length_example = 0.5 * vector_scale_numerator # Example length in scaled units
+            key_length_example = (
+                0.5 * vector_scale_numerator
+            )  # Example length in scaled units
             ax.quiverkey(
-                q, X=0.9, Y=0.1, U=key_length_example,
-                label=f'Scaled Field', # Consider a more specific label if units are known
-                labelpos='E',
-                coordinates='axes'
+                q,
+                X=0.9,
+                Y=0.1,
+                U=key_length_example,
+                label=f"Scaled Field",  # Consider a more specific label if units are known
+                labelpos="E",
+                coordinates="axes",
             )
-            first_quiver = False # Ensure key is added only once
+            first_quiver = False  # Ensure key is added only once
 
     # Add title if requested
     if if_title:
@@ -1191,8 +1314,8 @@ def orbits_hemisphere_with_one_vector_projection_custom_colors(
 def orbits_hemisphere_with_uv_vectors_projection(
     lons_list: list[np.ndarray],
     lats_list: list[np.ndarray],
-    vector_east_component_list: list[np.ndarray], # Input East component
-    vector_north_component_list: list[np.ndarray], # Input North component
+    vector_east_component_list: list[np.ndarray],  # Input East component
+    vector_north_component_list: list[np.ndarray],  # Input North component
     proj_method: str,
     central_longitude: float = 0,
     figsize: tuple[float, float] = (12, 12),
@@ -1201,13 +1324,13 @@ def orbits_hemisphere_with_uv_vectors_projection(
     if_title: bool = True,
     title: str = None,
     ax: plt.Axes = None,
-    step: int = 1, # Default step to 1 (no skipping unless specified)
-    trajectory_color: str = 'darkgray',
-    vector_color: str = 'skyblue',
-    vector_units_label: str = 'units', # Label for quiver key units
-    quiver_scale: float = 10.0,       # Scale for quiver (data units per arrow length unit). Adjust based on vector magnitudes.
-    quiver_key_magnitude: float = None, # Magnitude reference for the quiver key. If None, uses max magnitude.
-    quiver_width: float = 0.003,       # Width of the vector arrows
+    step: int = 1,  # Default step to 1 (no skipping unless specified)
+    trajectory_color: str = "darkgray",
+    vector_color: str = "skyblue",
+    vector_units_label: str = "units",  # Label for quiver key units
+    quiver_scale: float = 10.0,  # Scale for quiver (data units per arrow length unit). Adjust based on vector magnitudes.
+    quiver_key_magnitude: float = None,  # Magnitude reference for the quiver key. If None, uses max magnitude.
+    quiver_width: float = 0.003,  # Width of the vector arrows
 ):
     """
     Plots satellite orbits and associated vectors (defined by East/North components)
@@ -1241,10 +1364,16 @@ def orbits_hemisphere_with_uv_vectors_projection(
     Returns:
         tuple[plt.Figure, plt.Axes]: The figure and axes objects.
     """
-    assert proj_method in ["NorthPolarStereo", "SouthPolarStereo"], \
-        "proj_method must be either 'NorthPolarStereo' or 'SouthPolarStereo'"
-    assert len(lons_list) == len(lats_list) == len(vector_east_component_list) == len(vector_north_component_list), \
-        "Input lists (lons, lats, east_comp, north_comp) must have the same length."
+    assert proj_method in [
+        "NorthPolarStereo",
+        "SouthPolarStereo",
+    ], "proj_method must be either 'NorthPolarStereo' or 'SouthPolarStereo'"
+    assert (
+        len(lons_list)
+        == len(lats_list)
+        == len(vector_east_component_list)
+        == len(vector_north_component_list)
+    ), "Input lists (lons, lats, east_comp, north_comp) must have the same length."
 
     # Projection configuration
     proj_dict = {
@@ -1252,7 +1381,7 @@ def orbits_hemisphere_with_uv_vectors_projection(
         "SouthPolarStereo": ccrs.SouthPolarStereo,
     }
     proj = proj_dict[proj_method](central_longitude=central_longitude)
-    geodetic = ccrs.PlateCarree() # Input data CRS is Plate Carree (lon/lat)
+    geodetic = ccrs.PlateCarree()  # Input data CRS is Plate Carree (lon/lat)
 
     # Set default extent, title, and ylocs based on projection
     if proj_method == "NorthPolarStereo":
@@ -1260,12 +1389,14 @@ def orbits_hemisphere_with_uv_vectors_projection(
         default_title = "North Hemisphere Map using NorthPolarStereo Projection"
         ylocs = np.arange(0, 91, 15)
         # Limit latitude extent slightly from pole for better visualization if needed
-        if lon_lat_ext is None: lon_lat_ext = (-180, 180, 10, 90) # Example limit
-    else: # SouthPolarStereo
+        if lon_lat_ext is None:
+            lon_lat_ext = (-180, 180, 10, 90)  # Example limit
+    else:  # SouthPolarStereo
         default_ext = (-180, 180, -90, 0)
         default_title = "South Hemisphere Map using SouthPolarStereo Projection"
         ylocs = np.arange(-90, 0, 15)
-        if lon_lat_ext is None: lon_lat_ext = (-180, 180, -90, -10) # Example limit
+        if lon_lat_ext is None:
+            lon_lat_ext = (-180, 180, -90, -10)  # Example limit
 
     current_ext = lon_lat_ext if lon_lat_ext is not None else default_ext
     current_title = title if title is not None else default_title
@@ -1274,7 +1405,7 @@ def orbits_hemisphere_with_uv_vectors_projection(
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize, subplot_kw={"projection": proj})
     else:
-        fig = ax.figure # Use the figure associated with the provided axes
+        fig = ax.figure  # Use the figure associated with the provided axes
 
     # Set map extent
     ax.set_extent(list(current_ext), crs=geodetic)
@@ -1288,14 +1419,24 @@ def orbits_hemisphere_with_uv_vectors_projection(
 
     # Add geographic features if requested
     if if_cfeature:
-        ax.add_feature(cfeature.LAND.with_scale("50m"), alpha=0.6, zorder=0, facecolor='lightgray')
-        ax.add_feature(cfeature.OCEAN.with_scale("50m"), alpha=0.4, zorder=0, facecolor='aliceblue')
-        ax.coastlines(resolution="50m", linewidth=0.5, color='gray', zorder=1)
+        ax.add_feature(
+            cfeature.LAND.with_scale("50m"), alpha=0.6, zorder=0, facecolor="lightgray"
+        )
+        ax.add_feature(
+            cfeature.OCEAN.with_scale("50m"), alpha=0.4, zorder=0, facecolor="aliceblue"
+        )
+        ax.coastlines(resolution="50m", linewidth=0.5, color="gray", zorder=1)
 
     # Add gridlines
     gl = ax.gridlines(
-        crs=geodetic, draw_labels=True, linewidth=0.5, color="gray",
-        alpha=0.7, linestyle='--', xlocs=np.arange(-180, 181, 45), ylocs=ylocs,
+        crs=geodetic,
+        draw_labels=True,
+        linewidth=0.5,
+        color="gray",
+        alpha=0.7,
+        linestyle="--",
+        xlocs=np.arange(-180, 181, 45),
+        ylocs=ylocs,
     )
     gl.top_labels, gl.right_labels, gl.rotate_labels = False, False, False
     # Optional: Formatters for nicer labels
@@ -1303,32 +1444,39 @@ def orbits_hemisphere_with_uv_vectors_projection(
     # gl.yformatter = LATITUDE_FORMATTER
 
     first_quiver = True  # Control quiverkey display (only once)
-    max_magnitude_overall = 0.0 # Track max magnitude for potential key usage
+    max_magnitude_overall = 0.0  # Track max magnitude for potential key usage
 
-    for i, (lons, lats, u_east, v_north) in enumerate(zip(
-        lons_list, lats_list, vector_east_component_list, vector_north_component_list
-    )):
+    for i, (lons, lats, u_east, v_north) in enumerate(
+        zip(
+            lons_list,
+            lats_list,
+            vector_east_component_list,
+            vector_north_component_list,
+        )
+    ):
         # Check length consistency for this specific orbit
         if not (len(lons) == len(lats) == len(u_east) == len(v_north)):
-            print(f"Warning: Skipping orbit {i} due to inconsistent lengths of lon/lat/vector arrays.")
+            print(
+                f"Warning: Skipping orbit {i} due to inconsistent lengths of lon/lat/vector arrays."
+            )
             continue
         if len(lons) < 1:
-            continue # Skip empty orbits
+            continue  # Skip empty orbits
 
         # Apply step for subsampling if specified
         if step is not None and step > 1:
-             lons_step = lons[::step]
-             lats_step = lats[::step]
-             u_east_step = u_east[::step]
-             v_north_step = v_north[::step]
+            lons_step = lons[::step]
+            lats_step = lats[::step]
+            u_east_step = u_east[::step]
+            v_north_step = v_north[::step]
         else:
-             lons_step = lons
-             lats_step = lats
-             u_east_step = u_east
-             v_north_step = v_north
+            lons_step = lons
+            lats_step = lats
+            u_east_step = u_east
+            v_north_step = v_north
 
         if len(lons_step) < 1:
-            continue # Skip if subsampling resulted in empty array
+            continue  # Skip if subsampling resulted in empty array
 
         # Transform coordinates to map projection
         try:
@@ -1344,8 +1492,12 @@ def orbits_hemisphere_with_uv_vectors_projection(
         # Transform vectors from Geographic (East, North) to Projection coordinates
         try:
             # Ensure inputs to transform_vectors are valid
-            valid_vector_mask = np.isfinite(lons_step) & np.isfinite(lats_step) & \
-                                np.isfinite(u_east_step) & np.isfinite(v_north_step)
+            valid_vector_mask = (
+                np.isfinite(lons_step)
+                & np.isfinite(lats_step)
+                & np.isfinite(u_east_step)
+                & np.isfinite(v_north_step)
+            )
 
             if not np.any(valid_vector_mask):
                 print(f"Warning: No valid vector data for orbit {i} after filtering.")
@@ -1359,7 +1511,6 @@ def orbits_hemisphere_with_uv_vectors_projection(
             x_proj_valid = x_proj[valid_vector_mask]
             y_proj_valid = y_proj[valid_vector_mask]
 
-
             u_proj, v_proj = proj.transform_vectors(
                 geodetic, lons_valid, lats_valid, u_east_valid, v_north_valid
             )
@@ -1367,34 +1518,51 @@ def orbits_hemisphere_with_uv_vectors_projection(
             print(f"Warning: Vector transformation failed for orbit {i}: {e}")
             # Still plot trajectory if points are valid
             if len(x_proj) > 0:
-                 ax.plot(x_proj, y_proj, color=trajectory_color, linestyle='-', lw=1.5, zorder=2, transform=proj)
-            continue # Skip vector plotting for this orbit
+                ax.plot(
+                    x_proj,
+                    y_proj,
+                    color=trajectory_color,
+                    linestyle="-",
+                    lw=1.5,
+                    zorder=2,
+                    transform=proj,
+                )
+            continue  # Skip vector plotting for this orbit
 
         # Update overall max magnitude (using original components for physical meaning)
         current_mags = np.hypot(u_east_valid, v_north_valid)
         if len(current_mags) > 0:
-             max_magnitude_overall = max(max_magnitude_overall, np.max(current_mags))
+            max_magnitude_overall = max(max_magnitude_overall, np.max(current_mags))
 
         # Plot trajectory line (use original potentially non-masked points for continuity)
         if len(x_proj) > 0:
-             ax.plot(x_proj, y_proj, color=trajectory_color, linestyle='-', lw=1.5, zorder=2, transform=proj)
-
+            ax.plot(
+                x_proj,
+                y_proj,
+                color=trajectory_color,
+                linestyle="-",
+                lw=1.5,
+                zorder=2,
+                transform=proj,
+            )
 
         # Plot vectors using quiver
         # Note: x_proj_valid, y_proj_valid, u_proj, v_proj are all in the projection's coordinate system.
         # We do NOT use transform=proj here because the coordinates and vectors are already transformed.
         q = ax.quiver(
-            x_proj_valid, y_proj_valid, # Vector origins in projection coordinates
-            u_proj, v_proj,             # Vector components in projection coordinates
+            x_proj_valid,
+            y_proj_valid,  # Vector origins in projection coordinates
+            u_proj,
+            v_proj,  # Vector components in projection coordinates
             color=vector_color,
-            scale=quiver_scale,         # Controls arrow size (data units per arrow length unit)
+            scale=quiver_scale,  # Controls arrow size (data units per arrow length unit)
             # scale_units='xy',           # Scale applies equally to x and y  # result in no length of vector, just some dots. So not set,use None.
-            angles='xy',                # Angles are relative to plot axes
-            width=quiver_width,         # Arrow width
+            angles="xy",  # Angles are relative to plot axes
+            width=quiver_width,  # Arrow width
             headwidth=0,
             headlength=0,
             headaxislength=0,
-            zorder=4                    # Draw vectors above trajectory
+            zorder=4,  # Draw vectors above trajectory
             # headwidth=3, headlength=5 # Optional: Add arrowheads if desired
         )
 
@@ -1409,14 +1577,15 @@ def orbits_hemisphere_with_uv_vectors_projection(
 
             ax.quiverkey(
                 q,
-                X=0.85, Y=0.10,           # Position of the key (adjust as needed)
-                U=key_mag,                # The magnitude the key represents (in original vector units)
-                label=f'{key_mag:.1f} {vector_units_label}', # Label for the key
-                labelpos='E',             # Label position (East)
-                coordinates='axes',       # Position relative to axes
-                fontproperties={'size': 9} # Adjust font size if needed
+                X=0.85,
+                Y=0.10,  # Position of the key (adjust as needed)
+                U=key_mag,  # The magnitude the key represents (in original vector units)
+                label=f"{key_mag:.1f} {vector_units_label}",  # Label for the key
+                labelpos="E",  # Label position (East)
+                coordinates="axes",  # Position relative to axes
+                fontproperties={"size": 9},  # Adjust font size if needed
             )
-            first_quiver = False # Ensure key is added only once
+            first_quiver = False  # Ensure key is added only once
 
     # Add title if requested
     if if_title:
@@ -1427,6 +1596,7 @@ def orbits_hemisphere_with_uv_vectors_projection(
 
 # Optional: For prettier tick labels
 # from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+
 
 # --- Internal Helper Function for Plotting a Single Hemisphere ---
 def _plot_hemisphere_internal(
@@ -1460,11 +1630,13 @@ def _plot_hemisphere_internal(
     if proj_method == "NorthPolarStereo":
         default_ext = (-180, 180, 0, 90)
         ylocs = np.arange(0, 91, 15)
-        if lon_lat_ext is None: lon_lat_ext = (-180, 180, 10, 90)
-    else: # SouthPolarStereo
+        if lon_lat_ext is None:
+            lon_lat_ext = (-180, 180, 10, 90)
+    else:  # SouthPolarStereo
         default_ext = (-180, 180, -90, 0)
         ylocs = np.arange(-90, 0, 15)
-        if lon_lat_ext is None: lon_lat_ext = (-180, 180, -90, -10)
+        if lon_lat_ext is None:
+            lon_lat_ext = (-180, 180, -90, -10)
     current_ext = lon_lat_ext
     ax.set_extent(list(current_ext), crs=geodetic)
     theta = np.linspace(0, 2 * np.pi, 100)
@@ -1473,63 +1645,119 @@ def _plot_hemisphere_internal(
     circle = mpath.Path(verts * radius + center)
     ax.set_boundary(circle, transform=ax.transAxes)
     if if_cfeature:
-        ax.add_feature(cfeature.LAND.with_scale("50m"), alpha=0.6, zorder=0, facecolor='lightgray')
-        ax.add_feature(cfeature.OCEAN.with_scale("50m"), alpha=0.4, zorder=0, facecolor='aliceblue')
-        ax.coastlines(resolution="50m", linewidth=0.5, color='gray', zorder=1)
+        ax.add_feature(
+            cfeature.LAND.with_scale("50m"), alpha=0.6, zorder=0, facecolor="lightgray"
+        )
+        ax.add_feature(
+            cfeature.OCEAN.with_scale("50m"), alpha=0.4, zorder=0, facecolor="aliceblue"
+        )
+        ax.coastlines(resolution="50m", linewidth=0.5, color="gray", zorder=1)
     gl = ax.gridlines(
-        crs=geodetic, draw_labels=True, linewidth=0.5, color="gray",
-        alpha=0.7, linestyle='--', xlocs=np.arange(-180, 181, 45), ylocs=ylocs,
+        crs=geodetic,
+        draw_labels=True,
+        linewidth=0.5,
+        color="gray",
+        alpha=0.7,
+        linestyle="--",
+        xlocs=np.arange(-180, 181, 45),
+        ylocs=ylocs,
     )
     gl.top_labels, gl.right_labels, gl.rotate_labels = False, False, False
     # --- (End Setup) ---
 
-    q_return = None # Store last quiver object
+    q_return = None  # Store last quiver object
 
-    for i, (lons, lats, u_east, v_north) in enumerate(zip(
-        lons_list, lats_list, vector_east_component_list, vector_north_component_list
-    )):
+    for i, (lons, lats, u_east, v_north) in enumerate(
+        zip(
+            lons_list,
+            lats_list,
+            vector_east_component_list,
+            vector_north_component_list,
+        )
+    ):
         # --- (Data validation, subsampling, transformations - same as before) ---
         if not (len(lons) == len(lats) == len(u_east) == len(v_north)):
-            print(f"Warning: Skipping orbit {i} in {proj_method} due to inconsistent lengths.")
+            print(
+                f"Warning: Skipping orbit {i} in {proj_method} due to inconsistent lengths."
+            )
             continue
-        if len(lons) < 1: continue
+        if len(lons) < 1:
+            continue
         if step is not None and step > 1:
-             lons_step, lats_step = lons[::step], lats[::step]
-             u_east_step, v_north_step = u_east[::step], v_north[::step]
+            lons_step, lats_step = lons[::step], lats[::step]
+            u_east_step, v_north_step = u_east[::step], v_north[::step]
         else:
-             lons_step, lats_step = lons, lats
-             u_east_step, v_north_step = u_east, v_north
-        if len(lons_step) < 1: continue
+            lons_step, lats_step = lons, lats
+            u_east_step, v_north_step = u_east, v_north
+        if len(lons_step) < 1:
+            continue
         try:
             proj_points = proj.transform_points(geodetic, lons_step, lats_step)
             x_proj, y_proj = proj_points[:, 0], proj_points[:, 1]
         except Exception as e:
-            print(f"Warning: Coord transform failed for orbit {i} in {proj_method}: {e}")
+            print(
+                f"Warning: Coord transform failed for orbit {i} in {proj_method}: {e}"
+            )
             continue
         try:
-            valid_mask = np.isfinite(lons_step) & np.isfinite(lats_step) & \
-                         np.isfinite(u_east_step) & np.isfinite(v_north_step)
-            if not np.any(valid_mask): continue
+            valid_mask = (
+                np.isfinite(lons_step)
+                & np.isfinite(lats_step)
+                & np.isfinite(u_east_step)
+                & np.isfinite(v_north_step)
+            )
+            if not np.any(valid_mask):
+                continue
             lons_valid, lats_valid = lons_step[valid_mask], lats_step[valid_mask]
-            u_east_valid, v_north_valid = u_east_step[valid_mask], v_north_step[valid_mask]
+            u_east_valid, v_north_valid = (
+                u_east_step[valid_mask],
+                v_north_step[valid_mask],
+            )
             x_proj_valid, y_proj_valid = x_proj[valid_mask], y_proj[valid_mask]
             u_proj, v_proj = proj.transform_vectors(
                 geodetic, lons_valid, lats_valid, u_east_valid, v_north_valid
             )
         except Exception as e:
-            print(f"Warning: Vector transform failed for orbit {i} in {proj_method}: {e}")
+            print(
+                f"Warning: Vector transform failed for orbit {i} in {proj_method}: {e}"
+            )
             if len(x_proj) > 0:
-                 ax.plot(x_proj, y_proj, color=trajectory_color, linestyle='-', lw=1.5, zorder=2, transform=proj)
+                ax.plot(
+                    x_proj,
+                    y_proj,
+                    color=trajectory_color,
+                    linestyle="-",
+                    lw=1.5,
+                    zorder=2,
+                    transform=proj,
+                )
             continue
         # --- (End Transformations) ---
 
         # --- (Plotting trajectory and vectors - same as before) ---
         if len(x_proj) > 0:
-            ax.plot(x_proj, y_proj, color=trajectory_color, linestyle='-', lw=1.5, zorder=2, transform=proj)
+            ax.plot(
+                x_proj,
+                y_proj,
+                color=trajectory_color,
+                linestyle="-",
+                lw=1.5,
+                zorder=2,
+                transform=proj,
+            )
         q = ax.quiver(
-            x_proj_valid, y_proj_valid, u_proj, v_proj,
-            color=vector_color, scale=quiver_scale, angles='xy', width=quiver_width,
-            headwidth=0, headlength=0, headaxislength=0, zorder=4
+            x_proj_valid,
+            y_proj_valid,
+            u_proj,
+            v_proj,
+            color=vector_color,
+            scale=quiver_scale,
+            angles="xy",
+            width=quiver_width,
+            headwidth=0,
+            headlength=0,
+            headaxislength=0,
+            zorder=4,
         )
         q_return = q
         # --- (End Plotting) ---
@@ -1541,12 +1769,16 @@ def _plot_hemisphere_internal(
             q_return,
             X=quiver_key_X,
             Y=quiver_key_Y,
-            U=quiver_key_magnitude, # Directly use the provided value
-            label=f'{quiver_key_magnitude:.1f} {vector_units_label}',
-            labelpos='E', coordinates='axes', fontproperties={'size': 9}
+            U=quiver_key_magnitude,  # Directly use the provided value
+            label=f"{quiver_key_magnitude:.1f} {vector_units_label}",
+            labelpos="E",
+            coordinates="axes",
+            fontproperties={"size": 9},
         )
     elif add_quiver_key and q_return is not None and quiver_key_magnitude is None:
-         print("Warning: Quiver key requested but 'quiver_key_magnitude' not provided. Key not added.")
+        print(
+            "Warning: Quiver key requested but 'quiver_key_magnitude' not provided. Key not added."
+        )
     # --- End Quiver Key Logic ---
 
 
@@ -1563,7 +1795,7 @@ def plot_dual_hemisphere_orbits(
     vector_east_component_sou_list: list[np.ndarray],
     vector_north_component_sou_list: list[np.ndarray],
     # --- REQUIRED Quiver Key Magnitude ---
-    quiver_key_magnitude: float, # Make this a required argument
+    quiver_key_magnitude: float,  # Make this a required argument
     # Common Parameters
     central_longitude: float = 0,
     figsize: tuple[float, float] = (20, 10),
@@ -1572,9 +1804,9 @@ def plot_dual_hemisphere_orbits(
     if_cfeature: bool = False,
     main_title: str = "Hemispheric Orbit Data",
     step: int = 1,
-    trajectory_color: str = 'darkgray',
-    vector_color: str = 'skyblue',
-    vector_units_label: str = 'units',
+    trajectory_color: str = "darkgray",
+    vector_color: str = "skyblue",
+    vector_units_label: str = "units",
     quiver_scale: float = 10.0,
     # quiver_key_magnitude is now required
     quiver_key_X: float = 0.85,
@@ -1616,37 +1848,49 @@ def plot_dual_hemisphere_orbits(
     axes = np.array([ax_nor, ax_sou])
     # --- (End Setup) ---
 
-
     # Plot North Hemisphere (NO key)
     # Pass quiver_key_magnitude=None (or any value, doesn't matter as add_quiver_key=False)
     _plot_hemisphere_internal(
-        ax=ax_nor, proj=proj_nor, proj_method="NorthPolarStereo",
-        lons_list=lons_nor_list, lats_list=lats_nor_list,
+        ax=ax_nor,
+        proj=proj_nor,
+        proj_method="NorthPolarStereo",
+        lons_list=lons_nor_list,
+        lats_list=lats_nor_list,
         vector_east_component_list=vector_east_component_nor_list,
         vector_north_component_list=vector_north_component_nor_list,
-        central_longitude=central_longitude, lon_lat_ext=lon_lat_ext_nor,
-        if_cfeature=if_cfeature, step=step,
-        trajectory_color=trajectory_color, vector_color=vector_color,
-        vector_units_label=vector_units_label, quiver_scale=quiver_scale,
-        quiver_key_magnitude=None, # Value ignored since add_quiver_key=False
+        central_longitude=central_longitude,
+        lon_lat_ext=lon_lat_ext_nor,
+        if_cfeature=if_cfeature,
+        step=step,
+        trajectory_color=trajectory_color,
+        vector_color=vector_color,
+        vector_units_label=vector_units_label,
+        quiver_scale=quiver_scale,
+        quiver_key_magnitude=None,  # Value ignored since add_quiver_key=False
         quiver_width=quiver_width,
         add_quiver_key=False,
         # X/Y don't matter here
     )
     ax_nor.set_title("Northern Hemisphere", fontsize=11, pad=15)
 
-
     # Plot South Hemisphere (WITH key, using the REQUIRED magnitude)
     _plot_hemisphere_internal(
-        ax=ax_sou, proj=proj_sou, proj_method="SouthPolarStereo",
-        lons_list=lons_sou_list, lats_list=lats_sou_list,
+        ax=ax_sou,
+        proj=proj_sou,
+        proj_method="SouthPolarStereo",
+        lons_list=lons_sou_list,
+        lats_list=lats_sou_list,
         vector_east_component_list=vector_east_component_sou_list,
         vector_north_component_list=vector_north_component_sou_list,
-        central_longitude=central_longitude, lon_lat_ext=lon_lat_ext_sou,
-        if_cfeature=if_cfeature, step=step,
-        trajectory_color=trajectory_color, vector_color=vector_color,
-        vector_units_label=vector_units_label, quiver_scale=quiver_scale,
-        quiver_key_magnitude=quiver_key_magnitude, # Pass the REQUIRED value
+        central_longitude=central_longitude,
+        lon_lat_ext=lon_lat_ext_sou,
+        if_cfeature=if_cfeature,
+        step=step,
+        trajectory_color=trajectory_color,
+        vector_color=vector_color,
+        vector_units_label=vector_units_label,
+        quiver_scale=quiver_scale,
+        quiver_key_magnitude=quiver_key_magnitude,  # Pass the REQUIRED value
         quiver_width=quiver_width,
         add_quiver_key=True,
         quiver_key_X=quiver_key_X,
@@ -1661,6 +1905,7 @@ def plot_dual_hemisphere_orbits(
     # --- (End Layout) ---
 
     return fig, axes
+
 
 # --- Example Usage ---
 # fig, axes = plot_dual_hemisphere_orbits(
