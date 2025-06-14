@@ -1,4 +1,4 @@
-"""Physical parameters and calculations for plasma physics and Alfvén waves.
+"""Physical parameters and calculations for plasma physics and Alfvén waves (the unit system is SI).
 
 This module contains physical constants and functions for calculating various
 plasma physics parameters, particularly those related to Alfvén waves.
@@ -21,6 +21,10 @@ import math
 from math import pi
 
 import numpy as np
+
+# Earth
+r_earth = 6378100  # (m) Radius of Earth
+
 
 # Physical constants (with unified unit) (SI) (refer to wiki.com)
 VACUUM_PERMEABILITY = 4 * pi * 1e-7  # (H/m SI)  $\mu_0$
