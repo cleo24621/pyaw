@@ -5,57 +5,46 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-# --- Configuration ---
-# Set pole to 'N', 'S', or 'Both'
-pole_mode = (
-    "S"  # <--- Set to 'S' for South Pole test, 'N' for North, 'Both' for side-by-side
-)
-
-# style
+from pyaw.configs import DATA_DIR
 
 plt.style.use("seaborn-v0_8-paper")
 
-# --- NEW: Auroral Oval Configuration ---
+# <--- Set 'S' for the South Pole test, 'N' for North, 'Both' for side-by-side
+POLE_MODE = "N"
+DEFAULT_MLAT_GRID_CIRCLES = np.arange(60, 81, 10)
+DEFAULT_PLOT_MLAT_OUTER_BOUNDARY = 58
+DEFAULT_MLAT_LABEL_MLT = 3.5  # Upper right
+
 PLOT_AURORAL_OVAL = True  # Set to True to draw an approximate auroral oval band
-# --- Approximate Oval Parameters (MLat degrees) ---
-# These are simplified representations and don't account for activity levels
 OVAL_EQUATORWARD_MLAT_AVG_N = 62.5  # Average equatorward boundary (North)
 OVAL_POLEWARD_MLAT_AVG_N = 72.5  # Average poleward boundary (North)
 OVAL_DAY_NIGHT_MLAT_DIFF = 2.5  # How much more equatorward at night vs day
 # OVAL_DAY_NIGHT_MLAT_DIFF = 0
 OVAL_COLOR = "lightgreen"
 OVAL_ALPHA = 0.3
-# --------------------------------------
 
 SAVE = False
-save_dir = r"G:\master\pyaw\scripts\results\aw_cases"
+SAVE_DIR = DATA_DIR / "results/mlt"
 
-target_dir = (
-    r"G:\master\pyaw\scripts\results\aw_cases\archive\orbis_geomag"  # Data directory
-)
+
+TARGET_DIR = DATA_DIR / "results/aw_cases/archive/orbits_geomag"  # Data directory
 SATELLITE_TRACK_COLOR = "red"  # Color for the tracks
 SATELLITE_TRACK_WIDTH = 1.0
 
-# --- Control Option ---
-enable_hover_info = False
-# --------------------
+ENABLE_HOVER_INFO = False  # If set True, when the mouse hovers in the point, get the information of the point.
 
-# --- Constants (Defaults for North Pole) ---
-DEFAULT_MLAT_GRID_CIRCLES = np.arange(60, 81, 10)  # [60, 70, 80]
-DEFAULT_PLOT_MLAT_OUTER_BOUNDARY = 58
-DEFAULT_MLAT_LABEL_MLT = 3.5  # Upper right
 
 MLT_GRID_LINES = np.arange(0, 24, 3)  # MLT lines to draw (every 3 hours)
 MLT_LABELS_LIST = [0, 6, 12, 18]  # MLT labels to show
 
 # --- mplcursors Check ---
-if enable_hover_info:
+if ENABLE_HOVER_INFO:
     try:
         import mplcursors
     except ImportError:
         print("Warning: mplcursors library not found. Hover info disabled.")
         print("Install it using: pip install mplcursors")
-        enable_hover_info = False
+        ENABLE_HOVER_INFO = False
 
 
 # --- Helper Functions (Unchanged - logic handles pole='S') ---
@@ -97,7 +86,7 @@ def get_pkl_files_pathlib(root_dir):
     return pkl_files
 
 
-pkl_paths = get_pkl_files_pathlib(target_dir)
+pkl_paths = get_pkl_files_pathlib(TARGET_DIR)
 print(f"Found {len(pkl_paths)} potential .pkl files.")
 
 loaded_file_count = 0
@@ -209,7 +198,7 @@ def plot_polar_view(ax, pole_type, track_data_list):
         ax.text(
             theta,
             r + 0.02 * max_radius,
-            f"{int(abs(mlat_val))}$^\circ$",
+            f"{int(abs(mlat_val))}°",
             color="dimgray",
             ha="center",
             va="center",
@@ -404,20 +393,20 @@ def create_hover_callback(pole_type_for_callback):
 
 
 # --- Main Plotting Logic ---
-if pole_mode == "N" or pole_mode == "S":
+if POLE_MODE == "N" or POLE_MODE == "S":
     fig = plt.figure(figsize=(7, 7))
     ax = fig.add_subplot(1, 1, 1, projection="polar")
-    plotted_lines = plot_polar_view(ax, pole_mode, all_loaded_tracks)
+    plotted_lines = plot_polar_view(ax, POLE_MODE, all_loaded_tracks)
 
     # Setup hover info if enabled and lines were plotted
-    if enable_hover_info and plotted_lines:
+    if ENABLE_HOVER_INFO and plotted_lines:
         print("Hover info enabled for single plot.")
         cursor = mplcursors.cursor(plotted_lines, hover=True)
-        cursor.connect("add", create_hover_callback(pole_mode))  # Pass the correct pole
-    elif enable_hover_info:
+        cursor.connect("add", create_hover_callback(POLE_MODE))  # Pass the correct pole
+    elif ENABLE_HOVER_INFO:
         print("Hover info enabled, but no valid track lines were plotted.")
 
-elif pole_mode == "Both":
+elif POLE_MODE == "Both":
     # Create figure with two subplots side-by-side
     fig, axs = plt.subplots(
         1, 2, figsize=(14, 7.5), subplot_kw={"projection": "polar"}
@@ -435,7 +424,7 @@ elif pole_mode == "Both":
     )  # Adjust y position
 
     # Setup hover info separately for each subplot if enabled
-    if enable_hover_info:
+    if ENABLE_HOVER_INFO:
         if plotted_lines_n:
             print("Hover info enabled for North Pole plot.")
             cursor_n = mplcursors.cursor(plotted_lines_n, hover=True)
@@ -462,20 +451,20 @@ elif pole_mode == "Both":
     plt.tight_layout(rect=[0, 0.03, 1, 0.96])  # Add rect to make space for suptitle
 
 else:
-    print(f"Error: Invalid pole_mode '{pole_mode}'. Choose 'N', 'S', or 'Both'.")
+    print(f"Error: Invalid pole_mode '{POLE_MODE}'. Choose 'N', 'S', or 'Both'.")
     exit()
 
 # --- Final Touches ---
-if not enable_hover_info:
+if not ENABLE_HOVER_INFO:
     print("Hover info disabled.")
 
 # --- Saving ---
 if SAVE:
     if not PLOT_AURORAL_OVAL:
-        save_n = f"mlt_{pole_mode}_all_cases.png"
+        save_n = f"mlt_{POLE_MODE}_all_cases.png"
     else:
-        save_n = f"mlt_{pole_mode}_add_approx_aurora_oval_all_cases.png"
-    save_path = os.path.join(save_dir, save_n)  # Use Path object for joining
+        save_n = f"mlt_{POLE_MODE}_add_approx_aurora_oval_all_cases.png"
+    save_path = os.path.join(SAVE_DIR, save_n)  # Use Path object for joining
     plt.savefig(save_path, dpi=300, bbox_inches="tight")  # Use bbox_inches='tight'
     print(f"Plot saved to: {save_path}")
 

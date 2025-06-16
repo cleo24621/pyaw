@@ -3,17 +3,17 @@ import unittest
 
 import numpy as np
 import pandas as pd
+from core.dmsp import SPDF
 from pandas import DataFrame
 
 from src.pyaw import ProjectConfigs
-from core.dmsp import SPDF
 
 data_dir_path = ProjectConfigs.data_dir_path
 
 
 class TestSSIES3(unittest.TestCase):
     def test_ssies3(self):
-        file_name = "dmsp-f18_ssies-3_thermal-plasma_202301010102_v01.cdf"
+        file_name = "../data/DMSP/dmsp-f18_ssies-3_thermal-plasma_202301010102_v01.cdf"
         file_path = os.path.join(data_dir_path, file_name)
         # 检验是否成功调用
         ssies3 = SPDF.SSIES3(file_path)
@@ -33,7 +33,7 @@ class TestSSIES3(unittest.TestCase):
 
 class TestSSM(unittest.TestCase):
     def test_ssm(self):
-        file_name = "dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf"
+        file_name = "../data/DMSP/dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf"
         file_path = os.path.join(data_dir_path, file_name)
         # 检验是否成功调用
         ssm = SPDF.SSM(file_path)
@@ -88,15 +88,19 @@ class TestSSM(unittest.TestCase):
 class TestSSIES3CoupleSSM(unittest.TestCase):
     def test_success_call(self):
         # not cross day, same day
-        file_name_ssies3 = "dmsp-f18_ssies-3_thermal-plasma_201401010124_v01.cdf"
-        file_name_ssm = "dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf"
+        file_name_ssies3 = (
+            "../data/DMSP/dmsp-f18_ssies-3_thermal-plasma_201401010124_v01.cdf"
+        )
+        file_name_ssm = "../data/DMSP/dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf"
         file_path_ssies3 = os.path.join(data_dir_path, file_name_ssies3)
         file_path_ssm = os.path.join(data_dir_path, file_name_ssm)
         # 成功调用
         ssies3_couple_ssm = SPDF.SSIES3CoupleSSM(file_path_ssies3, file_path_ssm)
 
         # cross day, same day
-        file_name_ssies3 = "dmsp-f18_ssies-3_thermal-plasma_201401012329_v01.cdf"
+        file_name_ssies3 = (
+            "../data/DMSP/dmsp-f18_ssies-3_thermal-plasma_201401012329_v01.cdf"
+        )
         file_path_ssies3 = os.path.join(data_dir_path, file_name_ssies3)
         # 调用时抛出正确错误
         with self.assertRaises(AssertionError) as cm:
@@ -104,7 +108,9 @@ class TestSSIES3CoupleSSM(unittest.TestCase):
         self.assertEqual(str(cm.exception), "ssies3文件不跨天")
 
         # not cross day, not same day
-        file_name_ssies3 = "dmsp-f18_ssies-3_thermal-plasma_202301010102_v01.cdf"
+        file_name_ssies3 = (
+            "../data/DMSP/dmsp-f18_ssies-3_thermal-plasma_202301010102_v01.cdf"
+        )
         file_path_ssies3 = os.path.join(data_dir_path, file_name_ssies3)
         # 调用时抛出正确错误
         with self.assertRaises(AssertionError) as cm:
@@ -113,12 +119,12 @@ class TestSSIES3CoupleSSM(unittest.TestCase):
 
     def test_clip(self):
         # ssies3 instance
-        file_name = "dmsp-f18_ssies-3_thermal-plasma_202301010102_v01.cdf"
+        file_name = "../data/DMSP/dmsp-f18_ssies-3_thermal-plasma_202301010102_v01.cdf"
         file_path = os.path.join(data_dir_path, file_name)
         ssies3 = SPDF.SSIES3(file_path)
 
         # ssm instance
-        file_name = "dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf"
+        file_name = "../data/DMSP/dmsp-f18_ssm_magnetometer_20140101_v1.0.4.cdf"
         file_path = os.path.join(data_dir_path, file_name)
         # 检验是否成功调用
         ssm = SPDF.SSM(file_path)

@@ -1,8 +1,13 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
-fp = './data/aux_SW_OPER_MAGA_HR_1B_12885_20160311T061733_20160311T075106.pkl'
+from pyaw.configs import DATA_DIR
+
+fp = (
+    DATA_DIR
+    / "swarm/aux_/aux_SW_OPER_MAGA_HR_1B_12885_20160311T061733_20160311T075106.pkl"
+)
 df_b_aux = pd.read_pickle(fp)
 longitudes = df_b_aux['Longitude'].values
 latitudes = df_b_aux['Latitude'].values
@@ -14,7 +19,6 @@ latitudes = df_b_aux['Latitude'].values
 
 latitudes = latitudes[0:140026]
 longitudes = longitudes[0:140026]
-
 
 
 # 预处理经度（转换为弧度并处理连续性）

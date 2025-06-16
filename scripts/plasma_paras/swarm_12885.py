@@ -20,8 +20,8 @@ ET_DY = np.datetime64("2016-03-11 06:47:55")
 script_dir = Path(__file__).parent
 data_dir = script_dir / ".." / ".." / "data"
 
-efia_lp_1b_file_name = "SW_OPER_EFIA_LP_1B_12885_20160311T061733_20160311T075106.pkl"
-efiatie_2_file_name = "SW_OPER_EFIATIE_2__12885_20160311T061733_20160311T075106.pkl"
+efia_lp_1b_file_name = "../../data/Swarm/electric_field/SW_OPER_EFIA_LP_1B_12885_20160311T061733_20160311T075106.pkl"
+efiatie_2_file_name = "../../data/Swarm/electric_field/SW_OPER_EFIATIE_2__12885_20160311T061733_20160311T075106.pkl"
 
 efia_lp_1b_file_path = data_dir / efia_lp_1b_file_name
 efiatie_2_file_path = data_dir / efiatie_2_file_name

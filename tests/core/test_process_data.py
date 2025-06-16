@@ -73,7 +73,7 @@ class TestZh1ProcessHemisphere(unittest.TestCase):
     def test_get_split_indices(self):
         # 0 descending (north to south)
         # path
-        file_name = "CSES_01_EFD_1_L2A_A1_175380_20210401_003440_20210401_010914_000.h5"
+        file_name = "../../data/ZH1/CSES_01_EFD_1_L2A_A1_175380_20210401_003440_20210401_010914_000.h5"
         file_path = os.path.join(data_dir_path, file_name)
 
         # test
@@ -90,7 +90,7 @@ class TestZh1ProcessHemisphere(unittest.TestCase):
 
         # 1 ascending (south to north)
         # path
-        file_name = "CSES_01_EFD_1_L2A_A1_175381_20210401_012158_20210401_015642_000.h5"
+        file_name = "../../data/ZH1/CSES_01_EFD_1_L2A_A1_175381_20210401_012158_20210401_015642_000.h5"
         file_path = os.path.join(data_dir_path, file_name)
         orbit_zh1 = utils.orbit.GetZh1NorSouSplitIndices(file_name)
         efd = zh1.EFD(file_path)

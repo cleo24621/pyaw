@@ -2,9 +2,9 @@ import os
 
 import pandas as pd
 from matplotlib import pyplot as plt
+from utils import orbit
 
 from src.pyaw import ProjectConfigs
-from utils import orbit
 
 # 主程序部分
 satellite = "Swarm"
@@ -13,7 +13,7 @@ orbit_number = 12727
 st = "20160229T235551"
 et = "20160301T012924"
 data_dir_path = ProjectConfigs.data_dir_path
-file_name = "aux_SW_OPER_MAGA_LR_1B_12728_20160301T012924_20160301T030258.pkl"  # modify: different file
+file_name = "../../../data/Swarm/aux_/aux_SW_OPER_MAGA_LR_1B_12728_20160301T012924_20160301T030258.pkl"  # modify: different file
 file_path = os.path.join(data_dir_path, file_name)
 df = pd.read_pickle(file_path)
 lats = df["Latitude"].values

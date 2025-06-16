@@ -1,7 +1,6 @@
 import unittest
 
 import pandas as pd
-
 import utils
 from utils.orbit import (
     orbit_hemisphere_projection,
@@ -21,7 +20,7 @@ class MyTestCase(unittest.TestCase):
 
         satellite = "Swarm"
         data_dir_path = ProjectConfigs.data_dir_path
-        file_name = "aux_SW_OPER_MAGA_LR_1B_12728_20160301T012924_20160301T030258.pkl"  # modify: different file
+        file_name = "../data/Swarm/aux_/aux_SW_OPER_MAGA_LR_1B_12728_20160301T012924_20160301T030258.pkl"  # modify: different file
         file_path = os.path.join(data_dir_path, file_name)
         df = pd.read_pickle(file_path)
         lats = df["Latitude"].values
@@ -50,7 +49,7 @@ class MyTestCase(unittest.TestCase):
         st = "20160229T235551"
         et = "20160301T012924"
         data_dir_path = ProjectConfigs.data_dir_path
-        file_name = "aux_SW_OPER_MAGA_LR_1B_12728_20160301T012924_20160301T030258.pkl"  # modify: different file
+        file_name = "../data/Swarm/aux_/aux_SW_OPER_MAGA_LR_1B_12728_20160301T012924_20160301T030258.pkl"  # modify: different file
         file_path = os.path.join(data_dir_path, file_name)
         df = pd.read_pickle(file_path)
         lats = df["Latitude"].values
@@ -155,7 +154,6 @@ class MyTestCase(unittest.TestCase):
         orbits_hemispheres_projection(
             lons_nor_list, lats_nor_list, lons_sou_list, lats_sou_list
         )
-
 
 
 if __name__ == "__main__":

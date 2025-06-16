@@ -83,7 +83,8 @@ SSIES3_ORBIT_TIME = timedelta(hours=1, minutes=45)
 
 class SPDF:
     class SSIES3:
-        def __init__(self, file_path):
+
+        def __init__(self, file_path: str):
             self.file_path = file_path
             self.original_df = self._read()
 

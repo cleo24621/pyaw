@@ -29,7 +29,7 @@ def trace_by_geopack(
     maxloop: int = MAXLOOP,
 ):
     """Trace a field line using geopack."""
-    geopack.recalc(dtime.timestamp)
+    # _ = geopack.recalc(dtime.timestamp)
     x1, x2, x3, xx, yy, zz = geopack.trace(
         c_gsm.data[0, 0],
         c_gsm.data[0, 1],

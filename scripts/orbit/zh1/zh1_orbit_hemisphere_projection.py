@@ -8,7 +8,7 @@ from src.pyaw import ProjectConfigs
 
 satellite = "zh1"
 data_dir_path = ProjectConfigs.data_dir_path
-file_name = "CSES_01_EFD_1_L2A_A1_175380_20210401_003440_20210401_010914_000.h5"  # modify: different file
+file_name = "../../../data/ZH1/CSES_01_EFD_1_L2A_A1_175380_20210401_003440_20210401_010914_000.h5"  # modify: different file
 file_path = os.path.join(data_dir_path, file_name)
 
 efd = zh1.EFD(file_path)
